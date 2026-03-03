@@ -547,41 +547,53 @@
             <button id="btn-colosseum-quit" class="game-quit-btn">✕ Quitter</button>
           </div>
 
-          <!-- Table area (lighter background) -->
-          <div class="colosseum-table-area">
-            <button id="btn-colosseum-eye" class="game-eye-btn" title="Voir la range">◎</button>
-            <div class="colosseum-stack-display">
-              <span class="colosseum-stack-value" id="colosseum-stack-value">—</span>
-              <span class="colosseum-stack-unit">BB</span>
-            </div>
-            <div id="colosseum-cards" class="game-cards"></div>
-            <div class="colosseum-situation-label" id="colosseum-situation-label"></div>
-            <!-- Action buttons live in the table area, below the cards -->
-            <div class="colosseum-action-box">
-              <div class="colosseum-action-row" id="colosseum-action-row"></div>
-            </div>
-          </div>
+          <!-- Body: recap sidebar + game area -->
+          <div class="colosseum-body">
 
-          <!-- Bottom panel: score | feedback/results -->
-          <div class="colosseum-bottom">
-
-            <!-- Left: score -->
-            <div class="colosseum-score-box">
-              <div class="game-score-item">
-                <span class="score-val score-correct-val" id="colosseum-score-correct">0</span>
-                <span class="score-label">Correct</span>
-              </div>
-              <div class="game-score-divider"></div>
-              <div class="game-score-item">
-                <span class="score-val score-wrong-val" id="colosseum-score-wrong">0</span>
-                <span class="score-label">Erreurs</span>
+            <!-- Left: live hand recap -->
+            <div class="colosseum-recap-sidebar">
+              <div class="colosseum-recap-range-info" id="colosseum-recap-range-info"></div>
+              <div class="colosseum-recap-list" id="colosseum-recap-list">
+                <div class="colosseum-recap-empty">Joue ta première main →</div>
               </div>
             </div>
 
-            <!-- Right: feedback / results -->
-            <div class="colosseum-feedback-panel" id="colosseum-feedback"></div>
+            <!-- Right: game area -->
+            <div class="colosseum-main">
 
-          </div>
+              <!-- Table area (lighter background) -->
+              <div class="colosseum-table-area">
+                <button id="btn-colosseum-eye" class="game-eye-btn" title="Voir la range">◎</button>
+                <div class="colosseum-stack-display">
+                  <span class="colosseum-stack-value" id="colosseum-stack-value">—</span>
+                  <span class="colosseum-stack-unit">BB</span>
+                </div>
+                <div id="colosseum-cards" class="game-cards"></div>
+                <div class="colosseum-situation-label" id="colosseum-situation-label"></div>
+                <!-- Action buttons -->
+                <div class="colosseum-action-box">
+                  <div class="colosseum-action-row" id="colosseum-action-row"></div>
+                  <div class="colosseum-action-feedback" id="colosseum-action-feedback"></div>
+                </div>
+              </div>
+
+              <!-- Bottom bar: score -->
+              <div class="colosseum-bottom">
+                <div class="colosseum-score-box">
+                  <div class="game-score-item">
+                    <span class="score-val score-correct-val" id="colosseum-score-correct">0</span>
+                    <span class="score-label">Correct</span>
+                  </div>
+                  <div class="game-score-divider"></div>
+                  <div class="game-score-item">
+                    <span class="score-val score-wrong-val" id="colosseum-score-wrong">0</span>
+                    <span class="score-label">Erreurs</span>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /colosseum-main -->
+          </div><!-- /colosseum-body -->
         </div>
 
         <!-- End screen overlay (shown after 100 hands) -->

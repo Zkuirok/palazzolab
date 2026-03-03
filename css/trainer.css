@@ -1486,29 +1486,24 @@
   border-radius: 2px;
 }
 
-/* --- Bottom panel (score | feedback) --- */
+/* --- Bottom panel (score) --- */
 .colosseum-bottom {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  align-items: stretch;
-  border-top: 1px solid rgba(180,145,80,0.20);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid rgba(180,145,80,0.18);
   flex-shrink: 0;
-  background-image:
-    linear-gradient(rgba(10, 7, 4, 0.82), rgba(10, 7, 4, 0.82)),
-    url('../assets/textures/marble-cream.png');
-  background-size: auto, auto;
-  background-position: center bottom, center bottom;
-  min-height: 150px;
+  background: #100d09;
+  padding: 12px 0;
 }
 
 .colosseum-score-box {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px;
-  border-right: 1px solid rgba(180,145,80,0.12);
+  gap: 24px;
+  padding: 10px 24px;
 }
 
 /* Action button box — sits in the table area, centered below the cards */
@@ -1530,17 +1525,18 @@
 /* Action button — color applied via inline style from JS */
 .colosseum-action-btn {
   width: 100%;
-  height: 42px;
-  padding: 0 8px;
+  height: 58px;
+  padding: 0 12px;
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
   border-radius: 3px;
-  border-width: 1.5px;
+  border-width: 2px;
   border-style: solid;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
   transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
 }
 
@@ -1672,4 +1668,235 @@
   height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
+}
+
+/* ============================================
+   COLOSSEUM — Two-column game layout
+   ============================================ */
+
+/* Horizontal wrapper: sidebar | main */
+.colosseum-body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Right column: table + bottom bar */
+.colosseum-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ============================================
+   COLOSSEUM — Recap sidebar
+   ============================================ */
+
+.colosseum-recap-sidebar {
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0d0a06;
+  border-right: 1px solid rgba(180,145,80,0.22);
+  overflow: hidden;
+}
+
+/* Range info header */
+.colosseum-recap-range-info {
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid rgba(180,145,80,0.18);
+  flex-shrink: 0;
+  background: rgba(180,145,80,0.04);
+}
+
+.crec-range-label {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(180,145,80,0.45);
+  margin-bottom: 5px;
+}
+
+.crec-range-name {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crec-range-meta {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--cream-muted);
+  letter-spacing: 0.02em;
+}
+
+
+/* Scrollable entries list */
+.colosseum-recap-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 8px;
+}
+
+.colosseum-recap-list::-webkit-scrollbar {
+  width: 3px;
+}
+.colosseum-recap-list::-webkit-scrollbar-thumb {
+  background: rgba(180,145,80,0.2);
+  border-radius: 2px;
+}
+
+.colosseum-recap-empty {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+  text-align: center;
+  padding: 32px 18px;
+  font-style: italic;
+  opacity: 0.55;
+  line-height: 1.6;
+}
+
+/* Each hand entry */
+.colosseum-recap-entry {
+  padding: 5px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  opacity: 0.5;
+  transition: opacity 200ms ease;
+}
+
+.colosseum-recap-entry.latest {
+  opacity: 1;
+  padding: 10px 18px 9px;
+  background: rgba(180,145,80,0.07);
+  border-bottom: 1px solid rgba(180,145,80,0.14);
+}
+
+.crec-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crec-result {
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+.crec-result.correct { color: #5ab870; }
+.crec-result.wrong   { color: #c05050; }
+
+.colosseum-recap-entry.latest .crec-result {
+  font-size: 15px;
+  width: 18px;
+}
+
+.crec-hand {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(220,200,160,0.6);
+  min-width: 34px;
+}
+
+.colosseum-recap-entry.latest .crec-hand {
+  font-size: 15px;
+  color: var(--cream-text);
+  min-width: 40px;
+}
+
+.crec-action {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.colosseum-recap-entry.latest .crec-action {
+  font-size: 12px;
+}
+
+/* Wrong answer: show what was played */
+.crec-played {
+  font-family: var(--font-body);
+  font-size: 10px;
+  padding-left: 22px;
+  margin-top: 2px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.colosseum-recap-entry.latest .crec-played {
+  font-size: 11px;
+}
+
+/* Colosseum score box: vertical divider in row layout */
+.colosseum-score-box .game-score-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(180,145,80,0.2);
+}
+
+/* ============================================
+   COLOSSEUM — Inline action feedback
+   ============================================ */
+
+.colosseum-action-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: height 150ms ease, opacity 150ms ease;
+  margin-top: 0;
+}
+
+.colosseum-action-feedback.aaf-visible {
+  height: 28px;
+  opacity: 1;
+  margin-top: 8px;
+}
+
+.aaf-icon {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.aaf-icon.aaf-correct { color: #5ab870; }
+.aaf-icon.aaf-wrong   { color: #c05050; }
+
+.aaf-text {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
 }

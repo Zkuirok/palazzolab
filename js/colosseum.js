@@ -38,6 +38,9 @@ let _showSelectView = null;
 let _onComplete = null;
 let _completeFired = false;
 
+let recentHands = [];
+let _autoAdvanceTimer = null;
+
 // === INIT ===
 
 export function initColosseum({ onBack, showGameView, showSelectView, onComplete = null }) {
@@ -212,6 +215,9 @@ function buildEligibleHands(range) {
 
 function startSession(range) {
   _completeFired = false;
+  recentHands = [];
+  if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
+
   activeRange = range;
   eligibleHands = buildEligibleHands(range);
   handsDone = 0;
@@ -222,6 +228,8 @@ function startSession(range) {
   const situationEl = document.getElementById('colosseum-situation-label');
   if (situationEl) situationEl.textContent = getSituationLabel(range.situation) || range.situation || '';
 
+  renderRecapRangeInfo(range);
+  renderRecapPanel();
   renderActionButtons(range);
   updateScoreDisplay();
   updateProgress();
@@ -238,9 +246,9 @@ function dealNextHand() {
     btn.disabled = false;
   });
 
-  // Clear feedback
-  const feedbackEl = document.getElementById('colosseum-feedback');
-  if (feedbackEl) feedbackEl.innerHTML = '';
+  // Clear inline action feedback
+  const feedbackEl = document.getElementById('colosseum-action-feedback');
+  if (feedbackEl) { feedbackEl.innerHTML = ''; feedbackEl.classList.remove('aaf-visible'); }
 
   // Random hand (combo-weighted)
   currentHandIndex = eligibleHands[Math.floor(Math.random() * eligibleHands.length)];
@@ -300,37 +308,85 @@ function handleAnswer(actionLabel, actionIdx) {
     }
   });
 
-  renderFeedback(isCorrect, correctDef, handName);
+  autoAdvanceFeedback(isCorrect, correctDef, handName, actionIdx);
 }
 
-function renderFeedback(isCorrect, correctDef, handName) {
-  const feedbackEl = document.getElementById('colosseum-feedback');
-  if (!feedbackEl) return;
-
+function autoAdvanceFeedback(isCorrect, correctDef, handName, chosenActionIdx) {
   const isLast = handsDone >= SESSION_SIZE;
+  const chosenDef = activeRange.actionDefs[chosenActionIdx];
 
-  feedbackEl.innerHTML = `
-    <div class="game-feedback-result ${isCorrect ? 'correct' : 'wrong'}">${isCorrect ? '✓' : '✗'}</div>
-    <div class="game-feedback-hand">${escapeHtml(handName)}</div>
-    <div class="colosseum-feedback-action">
-      <span class="feedback-threshold-label">Action</span>
-      <span class="colosseum-feedback-action-val"
-        style="background:${correctDef.color}22;color:${correctDef.color};border:1px solid ${correctDef.color}55">
-        ${escapeHtml(correctDef.label.toUpperCase())}
-      </span>
-    </div>
-    <button class="game-next-btn" id="btn-colosseum-next">
-      ${isLast ? 'Résultats →' : 'Suivante →'}
-    </button>
-  `;
+  // Update recap sidebar
+  addToRecap(handName, isCorrect, chosenDef, correctDef);
 
-  document.getElementById('btn-colosseum-next').addEventListener('click', () => {
-    if (handsDone >= SESSION_SIZE) {
-      showEndScreen();
+  // Show brief inline feedback below action buttons
+  const fbEl = document.getElementById('colosseum-action-feedback');
+  if (fbEl) {
+    if (isCorrect) {
+      fbEl.innerHTML = `<span class="aaf-icon aaf-correct">✓</span><span class="aaf-text" style="color:${correctDef.color}">${escapeHtml(correctDef.label.toUpperCase())}</span>`;
     } else {
-      dealNextHand();
+      fbEl.innerHTML = `<span class="aaf-icon aaf-wrong">✗</span><span class="aaf-text">Était : </span><span class="aaf-text" style="color:${correctDef.color}">${escapeHtml(correctDef.label.toUpperCase())}</span>`;
     }
+    fbEl.classList.add('aaf-visible');
+  }
+
+  // Auto-advance after short delay
+  if (_autoAdvanceTimer) clearTimeout(_autoAdvanceTimer);
+  const delay = isLast ? 700 : (isCorrect ? 750 : 1150);
+  _autoAdvanceTimer = setTimeout(() => {
+    _autoAdvanceTimer = null;
+    if (isLast) showEndScreen();
+    else dealNextHand();
+  }, delay);
+}
+
+// === RECAP SIDEBAR ===
+
+function addToRecap(handName, isCorrect, chosenDef, correctDef) {
+  recentHands.unshift({ handName, isCorrect, chosenDef, correctDef });
+  if (recentHands.length > 12) recentHands.pop();
+  renderRecapPanel();
+}
+
+function renderRecapPanel() {
+  const list = document.getElementById('colosseum-recap-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (recentHands.length === 0) {
+    list.innerHTML = '<div class="colosseum-recap-empty">Joue ta première main →</div>';
+    return;
+  }
+
+  recentHands.forEach((entry, i) => {
+    const el = document.createElement('div');
+    el.className = `colosseum-recap-entry${i === 0 ? ' latest' : ''}`;
+
+    const wrongLine = !entry.isCorrect
+      ? `<div class="crec-played" style="color:${entry.chosenDef.color}">${escapeHtml(entry.chosenDef.label.toUpperCase())}</div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="crec-main">
+        <span class="crec-result ${entry.isCorrect ? 'correct' : 'wrong'}">${entry.isCorrect ? '✓' : '✗'}</span>
+        <span class="crec-hand">${escapeHtml(entry.handName)}</span>
+        <span class="crec-action" style="color:${entry.correctDef.color}">${escapeHtml(entry.correctDef.label.toUpperCase())}</span>
+      </div>
+      ${wrongLine}
+    `;
+    list.appendChild(el);
   });
+}
+
+function renderRecapRangeInfo(range) {
+  const el = document.getElementById('colosseum-recap-range-info');
+  if (!el) return;
+  const situationLabel = getSituationLabel(range.situation) || range.situation || '';
+  const depthLabel = getDepthLabel(range);
+  el.innerHTML = `
+    <div class="crec-range-label">Range</div>
+    <div class="crec-range-name">${escapeHtml(range.name)}</div>
+    <div class="crec-range-meta">${escapeHtml(situationLabel)} · ${escapeHtml(depthLabel)}</div>
+  `;
 }
 
 // === SCORE & PROGRESS ===
