@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokerLab — Palazzo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/range-builder.css">
+  <link rel="stylesheet" href="css/trainer.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <img class="crest-img" src="assets/ornaments/blason.png" alt="PokerLab">
+      <div class="logo-title">PokerLab</div>
+      <div class="logo-subtitle">Training Palazzo</div>
+    </div>
+
+    <div class="frise-separator"></div>
+
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">Principal</div>
+        <div class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">⊞</span><span class="nav-text">Dashboard</span>
+        </div>
+        <div class="nav-item" data-page="ranges">
+          <span class="nav-icon">◧</span><span class="nav-text">Mes Ranges</span>
+          <span class="nav-badge" style="display:none"></span>
+        </div>
+        <div class="nav-item" data-page="trainer">
+          <span class="nav-icon">◎</span><span class="nav-text">Trainer</span>
+        </div>
+        <div class="nav-item" data-page="program">
+          <span class="nav-icon">◈</span><span class="nav-text">Programme</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Analyse</div>
+        <div class="nav-item" data-page="import">
+          <span class="nav-icon">↥</span><span class="nav-text">Import</span>
+        </div>
+        <div class="nav-item" data-page="postflop">
+          <span class="nav-icon">🂠</span><span class="nav-text">Postflop Lab</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Réglages</div>
+        <div class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙</span><span class="nav-text">Paramètres</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>« La fortune sourit aux esprits préparés. »</p>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <div class="page-content">
+        <div class="page-header">
+          <h1>Bienvenue, Nicolas</h1>
+          <p>Ton espace d'entraînement — prépare ta prochaine session.</p>
+        </div>
+        <div class="frise-divider"></div>
+
+        <div class="content-grid">
+          <div class="card ornamented" onclick="navigateTo('ranges')">
+            <div class="corner-tl"></div><div class="corner-tr"></div>
+            <div class="corner-bl"></div><div class="corner-br"></div>
+            <div class="card-icon gold">◧</div>
+            <h3>Range Builder</h3>
+            <p>Crée et édite tes ranges preflop. Matrice interactive, actions par couleur.</p>
+            <span class="card-arrow">→</span>
+          </div>
+          <div class="card ornamented" onclick="navigateTo('trainer')">
+            <div class="corner-tl"></div><div class="corner-tr"></div>
+            <div class="corner-bl"></div><div class="corner-br"></div>
+            <div class="card-icon green">◎</div>
+            <h3>Trainer</h3>
+            <p>Entraîne-toi sur tes ranges. Feedback instantané, suivi de progression.</p>
+            <span class="card-arrow">→</span>
+          </div>
+          <div class="card ornamented" onclick="navigateTo('import')">
+            <div class="corner-tl"></div><div class="corner-tr"></div>
+            <div class="corner-bl"></div><div class="corner-br"></div>
+            <div class="card-icon blue">↥</div>
+            <h3>Import & Review</h3>
+            <p>Importe tes mains Winamax et passe en revue tes erreurs.</p>
+            <span class="card-arrow">→</span>
+          </div>
+          <div class="card ornamented" onclick="navigateTo('postflop')">
+            <div class="corner-tl"></div><div class="corner-tr"></div>
+            <div class="corner-bl"></div><div class="corner-br"></div>
+            <div class="card-icon red">🂠</div>
+            <h3>Postflop Lab</h3>
+            <p>Arbre de décision, equity et EV par action.</p>
+            <span class="card-arrow">→</span>
+          </div>
+          <div class="card ornamented" onclick="navigateTo('program')">
+            <div class="corner-tl"></div><div class="corner-tr"></div>
+            <div class="corner-bl"></div><div class="corner-br"></div>
+            <div class="card-icon gold">◈</div>
+            <h3>Programme</h3>
+            <p>Révision espacée de tes ranges. Calibration, planification quotidienne, suivi.</p>
+            <span class="card-arrow">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRAMME -->
+    <div id="page-program" class="page" style="display:none">
+      <div class="page-content">
+        <div class="page-header">
+          <h1>Programme d'entraînement</h1>
+          <p>Révision espacée — calibration, planification quotidienne, suivi de progression.</p>
+        </div>
+        <div class="frise-divider"></div>
+        <div id="dashboard-program-section"></div>
+      </div>
+    </div>
+
+    <!-- RANGES -->
+    <div id="page-ranges" class="page" style="display:none">
+
+      <!-- LIST VIEW -->
+      <div id="range-list-view" class="range-subview">
+        <div class="page-content">
+          <div class="page-header">
+            <h1>Mes Ranges</h1>
+            <p>Organise tes ranges par situation, profondeur et profil adverse.</p>
+          </div>
+          <div class="frise-divider"></div>
+          <div class="filters-row">
+            <select id="filter-situation" class="select-baroque"><option value="">Toutes situations</option></select>
+            <select id="filter-opponent" class="select-baroque">
+              <option value="">Tous adversaires</option>
+              <option value="reg">Reg</option>
+              <option value="fish">Fish</option>
+              <option value="gto">GTO</option>
+            </select>
+            <button id="btn-new-range" class="btn-gold">+ Nouvelle Range</button>
+            <button id="btn-compare-mode" class="btn-stone" style="display:none">Comparer</button>
+          </div>
+          <div class="list-split-layout">
+            <div class="list-split-left">
+              <div id="range-cards-container" class="range-cards-container"></div>
+              <div id="range-empty-state" class="range-empty-state" style="display:none">
+                <div class="empty-icon">◧</div>
+                <p>Aucune range pour le moment.</p>
+                <p class="muted">Clique sur « + Nouvelle Range » pour commencer.</p>
+              </div>
+            </div>
+            <div id="range-preview-panel" class="list-split-right" style="display:none">
+              <div class="matrix-panel ornamented card-full">
+                <div class="corner-tl"></div><div class="corner-tr"></div>
+                <div class="corner-bl"></div><div class="corner-br"></div>
+                <div class="panel-header">
+                  <h3 id="preview-panel-title">—</h3>
+                  <div style="display:flex;gap:8px;">
+                    <button id="btn-preview-edit" class="btn-gold btn-small">Editer</button>
+                  </div>
+                </div>
+                <div class="panel-body">
+                  <div id="preview-action-bar" class="action-bar"></div>
+                  <div class="matrix-container">
+                    <div class="matrix-felt-bg"></div>
+                    <div class="mini-matrix show-labels" id="preview-matrix"></div>
+                  </div>
+                  <div id="preview-stats-row" class="stats-row"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPARE VIEW -->
+      <div id="range-compare-view" class="range-subview" style="display:none">
+        <div class="page-content">
+          <div class="compare-topbar">
+            <button id="btn-back-from-compare" class="btn-stone">← Retour</button>
+            <h2 class="compare-title">Comparaison de ranges</h2>
+          </div>
+          <div class="compare-selector">
+            <span class="form-label" style="margin-bottom:0">Sélectionner des ranges :</span>
+            <div id="compare-range-selector" class="compare-range-selector"></div>
+          </div>
+          <div id="compare-grid" class="compare-grid"></div>
+        </div>
+      </div>
+
+      <!-- EDITOR VIEW -->
+      <div id="range-editor-view" class="range-subview" style="display:none">
+        <div class="page-content">
+          <div class="editor-topbar">
+            <button id="btn-back-to-list" class="btn-stone">← Retour</button>
+            <div class="editor-topbar-actions">
+              <button id="btn-save-range" class="btn-gold">Sauvegarder</button>
+            </div>
+          </div>
+          <div class="editor-layout">
+            <!-- LEFT: Metadata + Action config -->
+            <div class="editor-sidebar">
+              <div class="editor-panel">
+                <h3 class="editor-panel-title">Informations</h3>
+                <div class="form-field">
+                  <label class="form-label">Nom</label>
+                  <input type="text" id="editor-name" class="form-input" placeholder="Nom de la range">
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Situation</label>
+                  <div class="form-row">
+                    <select id="editor-situation" class="form-select"></select>
+                    <input type="text" id="editor-situation-custom" class="form-input form-input-small" placeholder="Nom..." style="display:none">
+                    <button id="btn-add-situation" class="btn-stone btn-small" style="display:none">OK</button>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Profondeur (bb)</label>
+                  <div class="form-row">
+                    <input type="number" id="editor-depth-min" class="form-input form-input-small" min="1" max="200" step="0.5">
+                    <span class="form-separator">—</span>
+                    <input type="number" id="editor-depth-max" class="form-input form-input-small" min="1" max="200" step="0.5">
+                    <span class="form-suffix">bb</span>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Adversaire</label>
+                  <select id="editor-opponent" class="form-select">
+                    <option value="reg">Reg</option>
+                    <option value="fish">Fish</option>
+                    <option value="gto">GTO</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Sous-catégorie</label>
+                  <div class="form-row">
+                    <select id="editor-subcategory" class="form-select"></select>
+                    <input type="text" id="editor-subcategory-custom" class="form-input form-input-small" placeholder="Autre..." style="display:none">
+                    <button id="btn-add-subcategory" class="btn-stone btn-small" style="display:none">OK</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="editor-panel">
+                <h3 class="editor-panel-title">Actions</h3>
+                <div id="action-config-list" class="action-config-list"></div>
+                <button id="btn-add-action" class="btn-stone btn-small action-add-btn">+ Ajouter action</button>
+              </div>
+            </div>
+
+            <!-- RIGHT: Matrix -->
+            <div class="editor-main">
+              <div class="matrix-panel ornamented card-full">
+                <div class="corner-tl"></div><div class="corner-tr"></div>
+                <div class="corner-bl"></div><div class="corner-br"></div>
+                <div class="panel-header">
+                  <h3 id="editor-panel-title">Nouvelle Range</h3>
+                </div>
+                <div class="panel-body">
+                  <div id="editor-action-bar" class="action-bar"></div>
+                  <div id="gto-import-panel" class="gto-import-panel" style="display:none">
+                    <div class="gto-import-row">
+                      <label class="form-label">Action à importer :</label>
+                      <select id="gto-action-select" class="form-select gto-action-select"></select>
+                    </div>
+                    <textarea id="gto-paste-area" class="gto-paste-area" rows="5"
+                      placeholder="Collez les données GTO Wizard ici…&#10;Ex : Ac7d: 0.0014,Ac7h: 0.0014,Ac8d: 1"></textarea>
+                    <div class="gto-import-buttons">
+                      <button id="btn-gto-import" class="btn-primary btn-small">Importer</button>
+                      <button id="btn-gto-clear" class="btn-stone btn-small">Effacer cette action</button>
+                    </div>
+                    <div class="gto-import-hint">Les mains absentes reçoivent la fréquence 0 pour cette action.</div>
+                  </div>
+                  <div class="matrix-container">
+                    <div class="matrix-felt-bg"></div>
+                    <div class="mini-matrix" id="editor-matrix"></div>
+                  </div>
+                  <div id="editor-stats-row" class="stats-row"></div>
+                  <div class="toggle-row">
+                    <div class="toggle on" id="toggle-labels"></div>
+                    <span class="toggle-label">Afficher les labels de mains</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NASH EDITOR VIEW -->
+      <div id="range-nash-editor-view" class="range-subview" style="display:none">
+        <div class="page-content">
+          <div class="editor-topbar">
+            <button id="btn-back-from-nash" class="btn-stone">← Retour</button>
+            <div class="editor-topbar-actions">
+              <button id="btn-nash-clear-all" class="btn-stone">Tout effacer</button>
+              <button id="btn-save-nash" class="btn-gold">Sauvegarder</button>
+            </div>
+          </div>
+          <div class="editor-layout">
+            <!-- LEFT: minimal metadata + legend -->
+            <div class="editor-sidebar">
+              <div class="editor-panel">
+                <h3 class="editor-panel-title">Informations</h3>
+                <div class="form-field">
+                  <label class="form-label">Nom</label>
+                  <input type="text" id="nash-editor-name" class="form-input" placeholder="ex : Nash BTN Push">
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Type</label>
+                  <select id="nash-editor-charttype" class="form-select">
+                    <option value="push">Push/Fold (vous pushez)</option>
+                    <option value="call">Call/Fold (vous callez)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Format</label>
+                  <select id="nash-editor-format" class="form-select">
+                    <option value="HU">Heads-Up (HU)</option>
+                    <option value="3H">3-Handed (3H)</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Position</label>
+                  <select id="nash-editor-position" class="form-select">
+                    <option value="SB">SB</option>
+                    <option value="BB">BB</option>
+                  </select>
+                </div>
+              </div>
+              <div class="editor-panel">
+                <h3 class="editor-panel-title">Légende</h3>
+                <div class="nash-legend">
+                  <div class="nash-legend-row"><span class="nash-legend-swatch" style="background:#3a7a50"></span><span>&gt; 15 BB — Always</span></div>
+                  <div class="nash-legend-row"><span class="nash-legend-swatch" style="background:#7a9a30"></span><span>8 – 15 BB</span></div>
+                  <div class="nash-legend-row"><span class="nash-legend-swatch" style="background:#b07030"></span><span>4 – 8 BB</span></div>
+                  <div class="nash-legend-row"><span class="nash-legend-swatch" style="background:#a03030"></span><span>&lt; 4 BB</span></div>
+                  <div class="nash-legend-row"><span class="nash-legend-swatch" style="background:rgba(26,21,16,0.5);border:1px solid rgba(212,164,56,0.1)"></span><span>Non défini</span></div>
+                </div>
+                <p class="nash-hint">Cliquez sur une cellule pour saisir un seuil en BB.<br>Entrée pour confirmer, Suppr pour effacer.</p>
+              </div>
+            </div>
+
+            <!-- RIGHT: Nash matrix -->
+            <div class="editor-main">
+              <div class="matrix-panel ornamented card-full">
+                <div class="corner-tl"></div><div class="corner-tr"></div>
+                <div class="corner-bl"></div><div class="corner-br"></div>
+                <div class="panel-header">
+                  <h3>Table Nash</h3>
+                </div>
+                <div class="panel-body">
+                  <div class="matrix-container">
+                    <div class="matrix-felt-bg"></div>
+                    <div class="mini-matrix show-labels" id="nash-editor-matrix"></div>
+                  </div>
+                  <div id="nash-stats-row" class="stats-row"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TRAINER -->
+    <div id="page-trainer" class="page" style="display:none">
+
+      <!-- TRAINER HUB -->
+      <div id="trainer-hub" class="trainer-subview">
+        <div class="page-content">
+          <div class="page-header trainer-hub-header">
+            <h1>Arena</h1>
+            <p>Choisis ton épreuve et forge ta maîtrise.</p>
+          </div>
+          <div class="frise-divider"></div>
+          <div class="mini-games-grid">
+            <div class="mini-game-card ornamented" id="game-rubicon">
+              <div class="corner-tl"></div><div class="corner-tr"></div>
+              <div class="corner-bl"></div><div class="corner-br"></div>
+              <div class="mini-game-icon">⊗</div>
+              <div class="mini-game-name">Rubicon</div>
+              <div class="mini-game-desc">Push ou Fold ? Teste tes réflexes sur les tables Nash. Une décision, pas de retour en arrière.</div>
+              <div class="mini-game-tags">
+                <span class="mini-game-tag">Nash</span>
+                <span class="mini-game-tag">Push/Fold</span>
+                <span class="mini-game-tag">Court terme</span>
+              </div>
+            </div>
+
+            <div class="mini-game-card ornamented" id="game-colosseum">
+              <div class="corner-tl"></div><div class="corner-tr"></div>
+              <div class="corner-bl"></div><div class="corner-br"></div>
+              <div class="mini-game-icon">⚔</div>
+              <div class="mini-game-name">Colosseum</div>
+              <div class="mini-game-desc">Choisis la bonne action sur tes ranges. 100 mains, toutes les actions, un seul vainqueur.</div>
+              <div class="mini-game-tags">
+                <span class="mini-game-tag">Ranges</span>
+                <span class="mini-game-tag">100 mains</span>
+                <span class="mini-game-tag">Court terme</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUBICON: Range selection -->
+      <div id="rubicon-select-view" class="trainer-subview" style="display:none">
+        <div class="page-content">
+          <div class="rubicon-select-header">
+            <button id="btn-rubicon-back-hub" class="btn-stone">← Retour</button>
+            <span class="rubicon-select-title">Rubicon — Choisir une Table</span>
+          </div>
+          <div id="rubicon-range-list" class="rubicon-range-list"></div>
+          <div class="rubicon-start-bar">
+            <button id="btn-rubicon-start" class="btn-stone" disabled>Classique →</button>
+            <button id="btn-rubicon-start-challenge" class="btn-gold" disabled>Challenge →</button>
+            <span id="rubicon-warning" class="rubicon-warning" style="display:none"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RUBICON: Game room -->
+      <div id="rubicon-game-view" class="trainer-subview" style="display:none">
+        <div class="game-room">
+
+          <!-- Table area — full vertical space -->
+          <div class="game-table-area">
+            <img class="game-table-img" src="assets/game/table.png" alt="Table">
+            <!-- Eye button: toggle range preview (top-right) -->
+            <button id="btn-view-range-eye" class="game-eye-btn" title="Voir la range">◎</button>
+            <!-- Positions -->
+            <div id="game-pos-villain" class="game-position game-pos-villain"></div>
+            <div id="game-pos-villain2" class="game-position game-pos-villain2" style="display:none"></div>
+            <!-- Stack + cards -->
+            <div class="game-center-area">
+              <div class="game-stack-display">
+                <span class="game-stack-value" id="game-stack-value">—</span>
+                <span class="game-stack-unit">BB</span>
+              </div>
+              <div id="game-cards" class="game-cards"></div>
+            </div>
+            <div id="game-pos-hero" class="game-position game-pos-hero"></div>
+          </div>
+
+          <!-- Bottom panel: 3 columns — score | buttons | feedback -->
+          <div class="game-bottom">
+
+            <!-- Left: score + quit -->
+            <div class="game-score-box">
+              <div class="game-score-item">
+                <span class="score-val score-correct-val" id="score-correct">0</span>
+                <span class="score-label">Correct</span>
+              </div>
+              <div class="game-score-divider"></div>
+              <div class="game-score-item">
+                <span class="score-val score-wrong-val" id="score-wrong">0</span>
+                <span class="score-label">Erreurs</span>
+              </div>
+              <div class="game-score-divider"></div>
+              <div class="game-score-item">
+                <span class="score-val score-streak-val" id="score-streak">—</span>
+                <span class="score-label">Streak</span>
+              </div>
+              <div id="streak-message" class="streak-message" style="display:none"></div>
+              <button id="btn-rubicon-quit" class="game-quit-btn">✕ Quitter</button>
+            </div>
+
+            <!-- Center: action buttons -->
+            <div class="game-action-section">
+              <div class="game-action-row" id="game-action-row"></div>
+            </div>
+
+            <!-- Right: feedback panel -->
+            <div class="game-feedback-panel" id="game-feedback"></div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RUBICON: Challenge mode -->
+      <div id="rubicon-challenge-view" class="trainer-subview" style="display:none">
+        <div class="challenge-room">
+          <div class="challenge-topbar">
+            <div class="challenge-progress-wrap">
+              <span id="challenge-hand-count" class="challenge-hand-count">0 / 200</span>
+              <div class="challenge-progress-bar">
+                <div id="challenge-progress-fill" class="challenge-progress-fill"></div>
+              </div>
+            </div>
+            <div id="challenge-accuracy" class="challenge-accuracy">—%</div>
+            <button id="btn-challenge-quit" class="game-quit-btn">✕ Quitter</button>
+          </div>
+          <div id="challenge-grid" class="challenge-grid"></div>
+          <div id="challenge-next-bar" class="challenge-next-bar" style="display:none">
+            <button id="btn-challenge-next" class="btn-gold">Suivant →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLOSSEUM: Range selection -->
+      <div id="colosseum-select-view" class="trainer-subview" style="display:none">
+        <div class="page-content">
+          <div class="colosseum-select-header">
+            <button id="btn-colosseum-back" class="btn-stone">← Retour</button>
+            <span class="colosseum-select-title">Colosseum — Choisir une Range</span>
+          </div>
+          <div id="colosseum-range-list" class="colosseum-range-list"></div>
+          <div class="colosseum-start-bar">
+            <button id="btn-colosseum-start" class="btn-gold" disabled>Commencer →</button>
+            <span id="colosseum-warning" class="colosseum-warning" style="display:none"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLOSSEUM: Game room (100-hand session) -->
+      <div id="colosseum-game-view" class="trainer-subview" style="display:none">
+
+        <!-- Main game room -->
+        <div class="colosseum-room" id="colosseum-room">
+
+          <!-- Top progress bar -->
+          <div class="colosseum-topbar">
+            <div class="colosseum-progress-wrap">
+              <span id="colosseum-hand-count" class="colosseum-hand-count">0 / 100</span>
+              <div class="colosseum-progress-bar">
+                <div id="colosseum-progress-fill" class="colosseum-progress-fill"></div>
+              </div>
+            </div>
+            <div id="colosseum-topbar-accuracy" class="colosseum-accuracy-display">—%</div>
+            <button id="btn-colosseum-quit" class="game-quit-btn">✕ Quitter</button>
+          </div>
+
+          <!-- Table area (lighter background) -->
+          <div class="colosseum-table-area">
+            <button id="btn-colosseum-eye" class="game-eye-btn" title="Voir la range">◎</button>
+            <div class="colosseum-stack-display">
+              <span class="colosseum-stack-value" id="colosseum-stack-value">—</span>
+              <span class="colosseum-stack-unit">BB</span>
+            </div>
+            <div id="colosseum-cards" class="game-cards"></div>
+            <div class="colosseum-situation-label" id="colosseum-situation-label"></div>
+            <!-- Action buttons live in the table area, below the cards -->
+            <div class="colosseum-action-box">
+              <div class="colosseum-action-row" id="colosseum-action-row"></div>
+            </div>
+          </div>
+
+          <!-- Bottom panel: score | feedback/results -->
+          <div class="colosseum-bottom">
+
+            <!-- Left: score -->
+            <div class="colosseum-score-box">
+              <div class="game-score-item">
+                <span class="score-val score-correct-val" id="colosseum-score-correct">0</span>
+                <span class="score-label">Correct</span>
+              </div>
+              <div class="game-score-divider"></div>
+              <div class="game-score-item">
+                <span class="score-val score-wrong-val" id="colosseum-score-wrong">0</span>
+                <span class="score-label">Erreurs</span>
+              </div>
+            </div>
+
+            <!-- Right: feedback / results -->
+            <div class="colosseum-feedback-panel" id="colosseum-feedback"></div>
+
+          </div>
+        </div>
+
+        <!-- End screen overlay (shown after 100 hands) -->
+        <div class="colosseum-end-overlay" id="colosseum-end-overlay" style="display:none">
+          <div class="colosseum-end-screen">
+            <div class="challenge-end-title" id="colosseum-end-range-name"></div>
+            <div class="challenge-end-accuracy" id="colosseum-end-accuracy-val"></div>
+            <div class="challenge-end-detail" id="colosseum-end-detail"></div>
+            <div class="challenge-end-grade" id="colosseum-end-grade"></div>
+            <div class="challenge-end-actions">
+              <button class="btn-stone" id="btn-colosseum-replay">Rejouer</button>
+              <button class="btn-gold" id="btn-colosseum-end-back">Retour</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- IMPORT -->
+    <div id="page-import" class="page" style="display:none">
+      <div class="page-content">
+        <div class="page-header"><h1>Import & Review</h1><p>Importe tes mains et analyse tes décisions.</p></div>
+        <div class="frise-divider"></div>
+        <div class="placeholder-panel"><div class="icon">↥</div>Phase 4 — Import Winamax & H2N</div>
+      </div>
+    </div>
+
+    <!-- POSTFLOP -->
+    <div id="page-postflop" class="page" style="display:none">
+      <div class="page-content">
+        <div class="page-header"><h1>Postflop Lab</h1><p>Analyse postflop avec arbre de décision.</p></div>
+        <div class="frise-divider"></div>
+        <div class="placeholder-panel"><div class="icon">🂠</div>Phase 5 — Ton Flopzilla personnel</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page" style="display:none">
+      <div class="page-content">
+        <div class="page-header"><h1>Paramètres</h1><p>Configure ton expérience PokerLab.</p></div>
+        <div class="frise-divider"></div>
+        <div class="card card-full" style="cursor:default;max-width:500px;">
+          <h3 style="font-family:var(--font-heading);margin-bottom:16px;letter-spacing:1px;">Préférences</h3>
+          <div class="toggle-row"><div class="toggle on"></div><span class="toggle-label">Mode sombre</span></div>
+          <div class="toggle-row"><div class="toggle"></div><span class="toggle-label">Animations réduites</span></div>
+          <div class="toggle-row"><div class="toggle on"></div><span class="toggle-label">Sons de feedback</span></div>
+        </div>
+
+        <div class="frise-divider" style="margin-top:32px;"></div>
+        <div class="card card-full" style="cursor:default;max-width:500px;">
+          <h3 style="font-family:var(--font-heading);margin-bottom:8px;letter-spacing:1px;">Données</h3>
+          <p style="color:var(--cream-muted);font-size:13px;margin-bottom:20px;">Sauvegarde tes ranges dans un fichier JSON. Importe-les sur n'importe quel appareil ou navigateur.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-gold" id="btn-export-ranges">↓ Exporter mes ranges</button>
+            <button class="btn btn-stone" id="btn-import-ranges">↑ Importer un fichier</button>
+          </div>
+          <p id="import-feedback" style="margin-top:12px;font-size:13px;min-height:18px;"></p>
+          <input type="file" id="import-file-input" accept=".json" style="display:none;">
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon">✦</span><span id="toast-text"></span></div>
+
+<!-- RANGE TYPE MODAL -->
+<div id="range-type-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h2 class="modal-title">Type de Range</h2>
+    <div class="modal-choices">
+      <div class="modal-choice" id="choice-standard">
+        <div class="modal-choice-icon">◧</div>
+        <div class="modal-choice-label">Range Standard</div>
+        <div class="modal-choice-desc">Actions colorées, peinture à la souris, support GTO</div>
+      </div>
+      <div class="modal-choice" id="choice-nash">
+        <div class="modal-choice-icon">⊞</div>
+        <div class="modal-choice-label">Table Nash</div>
+        <div class="modal-choice-desc">Seuils push/fold en BB par main, gradient visuel</div>
+      </div>
+    </div>
+    <button id="btn-cancel-range-type" class="btn-stone btn-small" style="margin-top:12px">Annuler</button>
+  </div>
+</div>
+
+<!-- JS Modules -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>

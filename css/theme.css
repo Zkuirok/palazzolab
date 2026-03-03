@@ -1,0 +1,43 @@
+/* ============================================
+   PokerLab — Palazzo Theme
+   ============================================ */
+
+:root {
+  /* Gold palette */
+  --gold-bright: #d4a438;
+  --gold-light: #e8c870;
+  --gold-mid: #b8882c;
+  --gold-dark: #8a6420;
+  --gold-shadow: #5a4010;
+  --gold-glow: rgba(212, 164, 56, 0.3);
+  --gold-soft: rgba(212, 164, 56, 0.08);
+
+  /* Felt green */
+  --felt-dark: #1a3828;
+  --felt-mid: #2a5a3c;
+  --felt-light: #3a7a50;
+
+  /* Stone/surface */
+  --stone-deep: #1a1510;
+  --stone-surface: #221c14;
+  --stone-card: #2c2418;
+  --stone-hover: #362c1e;
+  --stone-elevated: #3a3020;
+
+  /* Accent red */
+  --red-rich: #a83030;
+  --red-soft: rgba(168, 48, 48, 0.15);
+
+  /* Text */
+  --cream-text: #f0e8d8;
+  --cream-dim: #b8a888;
+  --cream-muted: #7a6a50;
+
+  /* Fonts */
+  --font-display: 'Cinzel Decorative', serif;
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'EB Garamond', serif;
+
+  /* Overlay on marble texture */
+  --marble-overlay: rgba(30, 24, 16, 0.50);
+}
