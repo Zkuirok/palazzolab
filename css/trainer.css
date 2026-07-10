@@ -1900,3 +1900,177 @@
   text-transform: uppercase;
   color: var(--cream-dim);
 }
+
+/* ============================================
+   COLOSSEUM — Session size selector
+   ============================================ */
+
+.colosseum-size-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 12px;
+}
+
+.colosseum-size-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--cream-muted);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.size-chip {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  padding: 7px 14px;
+  background: var(--stone-card);
+  color: var(--cream-dim);
+  border: 1px solid rgba(212,164,56,0.15);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.size-chip:hover {
+  border-color: var(--gold-mid);
+  color: var(--cream-text);
+}
+
+.size-chip.active {
+  background: var(--gold-soft);
+  border-color: var(--gold-bright);
+  color: var(--gold-light);
+}
+
+/* ============================================
+   KEYBOARD HINTS (Colosseum + Rubicon)
+   ============================================ */
+
+.action-key-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  margin-right: 8px;
+  font-size: 10px;
+  letter-spacing: 0;
+  border: 1px solid rgba(255,255,255,0.55);
+  border-radius: 3px;
+  opacity: 0.8;
+  vertical-align: 1px;
+}
+
+.game-key-hint {
+  margin-top: 10px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+  font-style: italic;
+}
+
+/* ============================================
+   COLOSSEUM — End screen: action stats + mistakes
+   ============================================ */
+
+.colosseum-end-overlay .colosseum-end-screen {
+  max-height: 100%;
+  overflow-y: auto;
+  max-width: 760px;
+  gap: 14px;
+}
+
+.colosseum-end-action-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.end-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #4a3010;
+}
+
+.end-action-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(80,55,20,0.3);
+}
+
+.colosseum-end-mistakes {
+  max-width: 680px;
+}
+
+.end-mistakes-title {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(80,55,20,0.65);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.end-mistakes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.end-mistake-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(80,55,20,0.25);
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-heading);
+}
+
+.end-mistake-hand {
+  font-weight: 700;
+  color: #3a2810;
+}
+
+.end-mistake-chosen {
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.end-mistake-arrow {
+  color: rgba(80,55,20,0.5);
+}
+
+.end-mistake-count {
+  color: #a03030;
+  font-weight: 700;
+}
+
+.end-mistakes-none {
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  color: #3a7a50;
+  font-size: 13px;
+  text-align: center;
+}
+
+.end-mistakes-more {
+  font-size: 12px;
+  color: rgba(80,55,20,0.6);
+  align-self: center;
+  font-family: var(--font-body);
+  font-style: italic;
+}

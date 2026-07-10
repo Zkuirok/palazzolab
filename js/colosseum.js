@@ -9,7 +9,8 @@ import { getDepthLabel } from './range-model.js';
 
 // === CONSTANTS ===
 
-const SESSION_SIZE = 100;
+const SESSION_SIZES = [25, 50, 100];
+const DEFAULT_SESSION_SIZE = 100;
 const SUITS = ['heart', 'diamond', 'spade', 'club'];
 const HISTORY_KEY = 'pokerlab_colosseum_history';
 const MAX_HISTORY = 5; // sessions kept per range
@@ -43,6 +44,12 @@ let recentHands = [];
 let _autoAdvanceTimer = null;
 
 let _selectRanges = []; // standard ranges available in the select view
+let sessionSize = DEFAULT_SESSION_SIZE;
+
+// Learning aids: mistakes of the current session + retry queue
+let sessionMistakes = [];   // { handIndex, chosenIdx, correctIdx }
+let actionStats = [];       // per actionDef: { asked, correct }
+let retryQueue = [];        // { handIndex, dueAt } — missed hands come back
 
 // === INIT ===
 
@@ -77,6 +84,10 @@ export function initColosseum({ onBack, showGameView, showSelectView, onComplete
     _showSelectView();
   });
 
+  document.getElementById('btn-colosseum-end-review').addEventListener('click', () => {
+    if (activeRange) showRangePreview();
+  });
+
   document.getElementById('btn-colosseum-eye').addEventListener('click', () => {
     if (activeRange && currentHandIndex !== null) {
       document.getElementById('btn-colosseum-eye').classList.toggle('active');
@@ -87,13 +98,56 @@ export function initColosseum({ onBack, showGameView, showSelectView, onComplete
   // Select-view filters: persist + re-render on change
   ['colosseum-filter-opponent', 'colosseum-filter-situation', 'colosseum-filter-depth'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-      saveSelectFilters({
-        opponent: document.getElementById('colosseum-filter-opponent').value,
-        situation: document.getElementById('colosseum-filter-situation').value,
-        depth: document.getElementById('colosseum-filter-depth').value,
-      });
+      saveCurrentSelectPrefs();
       renderSelectList();
     });
+  });
+
+  // Session size chips
+  document.querySelectorAll('#colosseum-size-select .size-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      sessionSize = parseInt(chip.dataset.size, 10) || DEFAULT_SESSION_SIZE;
+      document.querySelectorAll('#colosseum-size-select .size-chip').forEach(c =>
+        c.classList.toggle('active', c === chip));
+      saveCurrentSelectPrefs();
+    });
+  });
+
+  // Keyboard shortcuts: 1–9 answer, Space/Enter fast-forwards the feedback delay
+  document.addEventListener('keydown', handleGameKeydown);
+}
+
+function handleGameKeydown(e) {
+  const gameVisible = document.getElementById('colosseum-game-view').style.display !== 'none';
+  if (!gameVisible || !activeRange) return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const endVisible = document.getElementById('colosseum-end-overlay').style.display !== 'none';
+  if (endVisible) return;
+
+  if (answering && /^[1-9]$/.test(e.key)) {
+    const idx = parseInt(e.key, 10) - 1;
+    const btn = document.querySelector(`.colosseum-action-btn[data-action-idx="${idx}"]`);
+    if (btn && !btn.disabled) {
+      e.preventDefault();
+      btn.click();
+    }
+  } else if (!answering && (e.key === ' ' || e.key === 'Enter') && _autoAdvanceTimer) {
+    // Skip the feedback delay
+    e.preventDefault();
+    clearTimeout(_autoAdvanceTimer);
+    _autoAdvanceTimer = null;
+    if (handsDone >= sessionSize) showEndScreen();
+    else dealNextHand();
+  }
+}
+
+function saveCurrentSelectPrefs() {
+  saveSelectFilters({
+    opponent: document.getElementById('colosseum-filter-opponent').value,
+    situation: document.getElementById('colosseum-filter-situation').value,
+    depth: document.getElementById('colosseum-filter-depth').value,
+    size: sessionSize,
   });
 }
 
@@ -108,6 +162,9 @@ export function reconfigureColosseum({ onBack, showSelectView, onComplete } = {}
 export function launchColosseumForRange(range) {
   _completeFired = false;
   activeRange = range;
+  // Respect the user's preferred session size even without visiting the picker
+  const saved = loadSelectFilters();
+  sessionSize = SESSION_SIZES.includes(saved.size) ? saved.size : DEFAULT_SESSION_SIZE;
   startSession(range);
   _showGameView();
 }
@@ -175,6 +232,11 @@ function populateSelectFilters() {
 
   // Opponent (static options)
   document.getElementById('colosseum-filter-opponent').value = saved.opponent || '';
+
+  // Session size
+  sessionSize = SESSION_SIZES.includes(saved.size) ? saved.size : DEFAULT_SESSION_SIZE;
+  document.querySelectorAll('#colosseum-size-select .size-chip').forEach(c =>
+    c.classList.toggle('active', parseInt(c.dataset.size, 10) === sessionSize));
 }
 
 function renderSelectList() {
@@ -311,6 +373,9 @@ function startSession(range) {
   handsDone = 0;
   correctCount = 0;
   answering = true;
+  sessionMistakes = [];
+  retryQueue = [];
+  actionStats = range.actionDefs.map(() => ({ asked: 0, correct: 0 }));
 
   // Situation label
   const situationEl = document.getElementById('colosseum-situation-label');
@@ -338,8 +403,21 @@ function dealNextHand() {
   const feedbackEl = document.getElementById('colosseum-action-feedback');
   if (feedbackEl) { feedbackEl.innerHTML = ''; feedbackEl.classList.remove('aaf-visible'); }
 
-  // Random hand (combo-weighted)
-  currentHandIndex = eligibleHands[Math.floor(Math.random() * eligibleHands.length)];
+  // Missed hand due for a retry? Otherwise random (combo-weighted)
+  let nextHand = null;
+  if (retryQueue.length > 0 && retryQueue[0].dueAt <= handsDone) {
+    const item = retryQueue.shift();
+    if (item.handIndex !== currentHandIndex) {
+      nextHand = item.handIndex;
+    } else {
+      // Avoid dealing the exact same hand twice in a row — postpone it
+      retryQueue.push({ handIndex: item.handIndex, dueAt: handsDone + 2 });
+    }
+  }
+  if (nextHand === null) {
+    nextHand = eligibleHands[Math.floor(Math.random() * eligibleHands.length)];
+  }
+  currentHandIndex = nextHand;
   const handName = HANDS_MATRIX[currentHandIndex];
 
   // Random stack within depthMin–depthMax
@@ -379,7 +457,19 @@ function handleAnswer(actionLabel, actionIdx) {
   const isCorrect = actionIdx === currentCorrectActionIdx;
   const correctDef = activeRange.actionDefs[currentCorrectActionIdx];
 
-  if (isCorrect) correctCount++;
+  if (actionStats[currentCorrectActionIdx]) {
+    actionStats[currentCorrectActionIdx].asked++;
+    if (isCorrect) actionStats[currentCorrectActionIdx].correct++;
+  }
+
+  if (isCorrect) {
+    correctCount++;
+  } else {
+    sessionMistakes.push({ handIndex: currentHandIndex, chosenIdx: actionIdx, correctIdx: currentCorrectActionIdx });
+    // Requeue the missed hand a few hands later so it gets re-tested
+    retryQueue.push({ handIndex: currentHandIndex, dueAt: handsDone + 3 + Math.floor(Math.random() * 4) });
+    retryQueue.sort((a, b) => a.dueAt - b.dueAt);
+  }
   handsDone++;
 
   updateScoreDisplay();
@@ -400,7 +490,7 @@ function handleAnswer(actionLabel, actionIdx) {
 }
 
 function autoAdvanceFeedback(isCorrect, correctDef, handName, chosenActionIdx) {
-  const isLast = handsDone >= SESSION_SIZE;
+  const isLast = handsDone >= sessionSize;
   const chosenDef = activeRange.actionDefs[chosenActionIdx];
 
   // Update recap sidebar
@@ -488,9 +578,9 @@ function updateScoreDisplay() {
 
 function updateProgress() {
   const countEl = document.getElementById('colosseum-hand-count');
-  if (countEl) countEl.textContent = `${handsDone} / ${SESSION_SIZE}`;
+  if (countEl) countEl.textContent = `${handsDone} / ${sessionSize}`;
   const fillEl = document.getElementById('colosseum-progress-fill');
-  if (fillEl) fillEl.style.width = `${(handsDone / SESSION_SIZE) * 100}%`;
+  if (fillEl) fillEl.style.width = `${(handsDone / sessionSize) * 100}%`;
   const accEl = document.getElementById('colosseum-topbar-accuracy');
   if (accEl) accEl.textContent = handsDone > 0 ? `${Math.round(correctCount / handsDone * 100)}%` : '—%';
 }
@@ -504,14 +594,14 @@ function renderActionButtons(range) {
   range.actionDefs.forEach((def, idx) => {
     const btn = document.createElement('button');
     btn.className = 'colosseum-action-btn';
-    btn.textContent = def.label.toUpperCase();
     btn.dataset.actionIdx = idx;
     btn.dataset.actionLabel = def.label;
-    // Opaque action color background with white text
+    // Opaque action color background with white text + keyboard hint
     btn.style.background = def.color;
     btn.style.borderColor = def.color;
     btn.style.color = '#ffffff';
     btn.style.textShadow = '0 1px 2px rgba(0,0,0,0.4)';
+    btn.innerHTML = `<span class="action-key-hint">${idx + 1}</span>${escapeHtml(def.label.toUpperCase())}`;
     btn.addEventListener('click', () => handleAnswer(def.label, idx));
     row.appendChild(btn);
   });
@@ -520,13 +610,22 @@ function renderActionButtons(range) {
 // === END SCREEN ===
 
 function showEndScreen() {
-  const accuracy = Math.round(correctCount / SESSION_SIZE * 100);
+  const accuracy = Math.round(correctCount / sessionSize * 100);
   const grade = GRADES.find(g => accuracy >= g.min)?.label ?? GRADES[GRADES.length - 1].label;
 
-  // Save to history
+  // Save to history (with mistakes so future reviews can target leaks)
   const history = loadHistory();
   if (!history[activeRange.id]) history[activeRange.id] = [];
-  history[activeRange.id].push({ date: new Date().toISOString(), correct: correctCount, total: SESSION_SIZE });
+  history[activeRange.id].push({
+    date: new Date().toISOString(),
+    correct: correctCount,
+    total: sessionSize,
+    mistakes: sessionMistakes.slice(0, 30).map(m => ({
+      hand: HANDS_MATRIX[m.handIndex],
+      chosen: activeRange.actionDefs[m.chosenIdx]?.label ?? '?',
+      correct: activeRange.actionDefs[m.correctIdx]?.label ?? '?',
+    })),
+  });
   if (history[activeRange.id].length > MAX_HISTORY) {
     history[activeRange.id] = history[activeRange.id].slice(-MAX_HISTORY);
   }
@@ -535,8 +634,10 @@ function showEndScreen() {
   // Populate end overlay
   document.getElementById('colosseum-end-range-name').textContent = activeRange.name;
   document.getElementById('colosseum-end-accuracy-val').textContent = `${accuracy}%`;
-  document.getElementById('colosseum-end-detail').textContent = `${correctCount} / ${SESSION_SIZE} correctes`;
+  document.getElementById('colosseum-end-detail').textContent = `${correctCount} / ${sessionSize} correctes`;
   document.getElementById('colosseum-end-grade').textContent = grade;
+  renderEndActionStats();
+  renderEndMistakes();
   document.getElementById('colosseum-end-overlay').style.display = '';
 
   // Notify program scheduler (once per session)
@@ -544,6 +645,72 @@ function showEndScreen() {
     _completeFired = true;
     _onComplete(activeRange.id, accuracy);
   }
+}
+
+// Per-action accuracy row on the end screen
+function renderEndActionStats() {
+  const el = document.getElementById('colosseum-end-action-stats');
+  if (!el) return;
+  el.innerHTML = '';
+  activeRange.actionDefs.forEach((def, i) => {
+    const s = actionStats[i];
+    if (!s || s.asked === 0) return;
+    const chip = document.createElement('span');
+    chip.className = 'end-action-chip';
+    const pct = Math.round(s.correct / s.asked * 100);
+    chip.innerHTML = `<span class="end-action-dot" style="background:${def.color}"></span>${escapeHtml(def.label.toUpperCase())} ${s.correct}/${s.asked}${s.asked >= 5 ? ` (${pct}%)` : ''}`;
+    el.appendChild(chip);
+  });
+}
+
+// Missed hands recap on the end screen, grouped and sorted by frequency
+function renderEndMistakes() {
+  const el = document.getElementById('colosseum-end-mistakes');
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (sessionMistakes.length === 0) {
+    el.innerHTML = '<div class="end-mistakes-none">Sans faute — session parfaite</div>';
+    return;
+  }
+
+  // Group by hand + chosen action
+  const groups = new Map();
+  sessionMistakes.forEach(m => {
+    const key = `${m.handIndex}|${m.chosenIdx}`;
+    if (!groups.has(key)) groups.set(key, { ...m, count: 0 });
+    groups.get(key).count++;
+  });
+  const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
+  const MAX_SHOWN = 14;
+
+  const title = document.createElement('div');
+  title.className = 'end-mistakes-title';
+  title.textContent = `Mains ratées (${sessionMistakes.length})`;
+  el.appendChild(title);
+
+  const listEl = document.createElement('div');
+  listEl.className = 'end-mistakes-list';
+  sorted.slice(0, MAX_SHOWN).forEach(m => {
+    const chosen = activeRange.actionDefs[m.chosenIdx];
+    const correct = activeRange.actionDefs[m.correctIdx];
+    const chip = document.createElement('span');
+    chip.className = 'end-mistake-chip';
+    chip.innerHTML = `
+      <span class="end-mistake-hand">${escapeHtml(HANDS_MATRIX[m.handIndex])}</span>
+      <span class="end-mistake-chosen" style="color:${chosen?.color ?? '#a03030'}">${escapeHtml((chosen?.label ?? '?').toUpperCase())}</span>
+      <span class="end-mistake-arrow">→</span>
+      <span class="end-mistake-correct" style="color:${correct?.color ?? '#3a7a50'}">${escapeHtml((correct?.label ?? '?').toUpperCase())}</span>
+      ${m.count > 1 ? `<span class="end-mistake-count">×${m.count}</span>` : ''}`;
+    listEl.appendChild(chip);
+  });
+  if (sorted.length > MAX_SHOWN) {
+    const more = document.createElement('span');
+    more.className = 'end-mistakes-more';
+    more.textContent = `+${sorted.length - MAX_SHOWN} autres`;
+    listEl.appendChild(more);
+  }
+  el.appendChild(listEl);
 }
 
 // === RANGE PREVIEW MODAL ===

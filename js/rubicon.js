@@ -33,6 +33,10 @@ let answering = true;   // false while showing feedback
 // Build a weighted index of all hands that have a defined threshold
 let eligibleHands = [];
 
+// Missed hands come back a few hands later
+let retryQueue = [];    // { handIndex, dueAt }
+let autoAdvanceTimer = null;
+
 // === INIT ===
 
 export function initRubicon({ onBackToHub: backHub, onBackToSelect: backSelect, onShowGameView: showGame, onStartChallenge }) {
@@ -56,6 +60,7 @@ export function initRubicon({ onBackToHub: backHub, onBackToSelect: backSelect, 
   });
 
   document.getElementById('btn-rubicon-quit').addEventListener('click', () => {
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
     activeRange = null;
     onBackToSelect();
   });
@@ -67,6 +72,25 @@ export function initRubicon({ onBackToHub: backHub, onBackToSelect: backSelect, 
       showRangePreview();
     }
   });
+
+  // Keyboard shortcuts: 1 = push/call, 2 = fold, Space/Enter = next hand
+  document.addEventListener('keydown', handleRubiconKeydown);
+}
+
+function handleRubiconKeydown(e) {
+  const visible = document.getElementById('rubicon-game-view').style.display !== 'none';
+  if (!visible || !activeRange) return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if (answering) {
+    const primary = activeRange.chartType === 'call' ? 'call' : 'push';
+    if (e.key === '1') { e.preventDefault(); handleAnswer(primary); }
+    else if (e.key === '2') { e.preventDefault(); handleAnswer('fold'); }
+  } else if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    dealNextHand();
+  }
 }
 
 // === RANGE SELECTION ===
@@ -133,6 +157,8 @@ function startSession(range) {
   activeRange = range;
   score = { correct: 0, wrong: 0, streak: 0 };
   answering = true;
+  retryQueue = [];
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 
   // Build weighted eligible hands list
   eligibleHands = [];
@@ -163,6 +189,7 @@ function startSession(range) {
 function dealNextHand() {
   if (eligibleHands.length === 0) return;
 
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
   answering = true;
 
   // Reset button styles
@@ -177,8 +204,21 @@ function dealNextHand() {
   // Random stack: 1.5 to 15 in 0.1 steps
   currentStack = Math.round((1.5 + Math.random() * 13.5) * 10) / 10;
 
-  // Random hand (weighted)
-  currentHandIndex = eligibleHands[Math.floor(Math.random() * eligibleHands.length)];
+  // Missed hand due for a retry? Otherwise random (weighted)
+  const answered = score.correct + score.wrong;
+  let nextHand = null;
+  if (retryQueue.length > 0 && retryQueue[0].dueAt <= answered) {
+    const item = retryQueue.shift();
+    if (item.handIndex !== currentHandIndex) {
+      nextHand = item.handIndex;
+    } else {
+      retryQueue.push({ handIndex: item.handIndex, dueAt: answered + 2 });
+    }
+  }
+  if (nextHand === null) {
+    nextHand = eligibleHands[Math.floor(Math.random() * eligibleHands.length)];
+  }
+  currentHandIndex = nextHand;
   const handName = HANDS_MATRIX[currentHandIndex];
 
   // Update stack display with brief fade transition
@@ -214,6 +254,10 @@ function handleAnswer(action) {
   } else {
     score.wrong++;
     score.streak = 0;
+    // Requeue the missed hand a few hands later
+    const answered = score.correct + score.wrong;
+    retryQueue.push({ handIndex: currentHandIndex, dueAt: answered + 3 + Math.floor(Math.random() * 4) });
+    retryQueue.sort((a, b) => a.dueAt - b.dueAt);
   }
   updateScoreBar();
 
@@ -228,6 +272,14 @@ function handleAnswer(action) {
 
   // Show feedback
   renderFeedback(isCorrect, threshold, correctAction, handName);
+
+  // Correct answers advance automatically; mistakes wait so you can study the threshold
+  if (isCorrect) {
+    autoAdvanceTimer = setTimeout(() => {
+      autoAdvanceTimer = null;
+      dealNextHand();
+    }, 900);
+  }
 }
 
 function renderFeedback(isCorrect, threshold, correctAction, handName) {
@@ -429,17 +481,27 @@ function renderActionButtons(isCall) {
   const pushBtn = document.createElement('button');
   pushBtn.id = `btn-action-${primaryAction}`;
   pushBtn.className = `game-action-btn ${primaryAction}-btn`;
-  pushBtn.textContent = primaryLabel;
+  pushBtn.innerHTML = `<span class="action-key-hint">1</span>${primaryLabel}`;
   pushBtn.addEventListener('click', () => handleAnswer(primaryAction));
 
   const foldBtn = document.createElement('button');
   foldBtn.id = 'btn-action-fold';
   foldBtn.className = 'game-action-btn fold-btn';
-  foldBtn.textContent = 'FOLD';
+  foldBtn.innerHTML = '<span class="action-key-hint">2</span>FOLD';
   foldBtn.addEventListener('click', () => handleAnswer('fold'));
 
   row.appendChild(pushBtn);
   row.appendChild(foldBtn);
+
+  // Keyboard hint under the action buttons
+  const section = row.parentElement;
+  let hint = section.querySelector('.game-key-hint');
+  if (!hint) {
+    hint = document.createElement('div');
+    hint.className = 'game-key-hint';
+    section.appendChild(hint);
+  }
+  hint.textContent = `Clavier : 1 = ${primaryLabel} · 2 = FOLD · Espace = suivante`;
 }
 
 // === CARD RENDERING ===

@@ -75,6 +75,8 @@
         </div>
         <div class="frise-divider"></div>
 
+        <div id="home-stats"></div>
+
         <div class="content-grid">
           <div class="card ornamented" onclick="navigateTo('ranges')">
             <div class="corner-tl"></div><div class="corner-tr"></div>
@@ -537,6 +539,12 @@
           </div>
           <div id="colosseum-range-list" class="colosseum-range-list"></div>
           <div class="colosseum-start-bar">
+            <div class="colosseum-size-select" id="colosseum-size-select">
+              <span class="colosseum-size-label">Mains :</span>
+              <button class="size-chip" data-size="25" type="button">25</button>
+              <button class="size-chip" data-size="50" type="button">50</button>
+              <button class="size-chip active" data-size="100" type="button">100</button>
+            </div>
             <button id="btn-colosseum-start" class="btn-gold" disabled>Commencer →</button>
             <span id="colosseum-warning" class="colosseum-warning" style="display:none"></span>
           </div>
@@ -617,7 +625,10 @@
             <div class="challenge-end-accuracy" id="colosseum-end-accuracy-val"></div>
             <div class="challenge-end-detail" id="colosseum-end-detail"></div>
             <div class="challenge-end-grade" id="colosseum-end-grade"></div>
+            <div class="colosseum-end-action-stats" id="colosseum-end-action-stats"></div>
+            <div class="colosseum-end-mistakes" id="colosseum-end-mistakes"></div>
             <div class="challenge-end-actions">
+              <button class="btn-stone" id="btn-colosseum-end-review">◎ Revoir la range</button>
               <button class="btn-stone" id="btn-colosseum-replay">Rejouer</button>
               <button class="btn-gold" id="btn-colosseum-end-back">Retour</button>
             </div>
@@ -651,14 +662,6 @@
       <div class="page-content">
         <div class="page-header"><h1>Paramètres</h1><p>Configure ton expérience PokerLab.</p></div>
         <div class="frise-divider"></div>
-        <div class="card card-full" style="cursor:default;max-width:500px;">
-          <h3 style="font-family:var(--font-heading);margin-bottom:16px;letter-spacing:1px;">Préférences</h3>
-          <div class="toggle-row"><div class="toggle on"></div><span class="toggle-label">Mode sombre</span></div>
-          <div class="toggle-row"><div class="toggle"></div><span class="toggle-label">Animations réduites</span></div>
-          <div class="toggle-row"><div class="toggle on"></div><span class="toggle-label">Sons de feedback</span></div>
-        </div>
-
-        <div class="frise-divider" style="margin-top:32px;"></div>
         <div class="card card-full" style="cursor:default;max-width:500px;">
           <h3 style="font-family:var(--font-heading);margin-bottom:8px;letter-spacing:1px;">Données</h3>
           <p style="color:var(--cream-muted);font-size:13px;margin-bottom:20px;">Sauvegarde tes ranges dans un fichier JSON. Importe-les sur n'importe quel appareil ou navigateur.</p>

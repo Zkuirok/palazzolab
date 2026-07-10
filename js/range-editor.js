@@ -18,6 +18,11 @@ let activeActionIndex = 0;
 let onSave = null;
 let onBack = null;
 let destroyPainter = null;
+let isDirty = false;
+
+export function editorHasUnsavedChanges() {
+  return isDirty;
+}
 
 export function initEditor({ onSaveRange, onBackToList }) {
   onSave = onSaveRange;
@@ -26,6 +31,14 @@ export function initEditor({ onSaveRange, onBackToList }) {
   document.getElementById('btn-save-range').addEventListener('click', handleSave);
   document.getElementById('btn-back-to-list').addEventListener('click', handleBack);
   document.getElementById('btn-add-action').addEventListener('click', handleAddAction);
+
+  // Track form edits for the unsaved-changes guard
+  ['editor-name', 'editor-depth-min', 'editor-depth-max'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => { isDirty = true; });
+  });
+  ['editor-situation', 'editor-opponent', 'editor-subcategory'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => { isDirty = true; });
+  });
 
   // Situation select: show custom input when "custom" is selected
   document.getElementById('editor-situation').addEventListener('change', (e) => {
@@ -87,6 +100,7 @@ export function initEditor({ onSaveRange, onBackToList }) {
 export function openEditor(range) {
   currentRange = structuredClone(range);
   activeActionIndex = 0;
+  isDirty = false;
 
   // Populate form
   document.getElementById('editor-name').value = currentRange.name;
@@ -199,6 +213,7 @@ function renderActionConfig() {
     input.value = action.label;
     input.addEventListener('change', () => {
       currentRange.actionDefs[i].label = input.value.trim() || `Action ${i + 1}`;
+      isDirty = true;
       renderActionBar();
       updateStats();
     });
@@ -243,6 +258,7 @@ function openColorPicker(event, actionIndex) {
     swatch.style.background = color;
     swatch.addEventListener('click', () => {
       currentRange.actionDefs[actionIndex].color = color;
+      isDirty = true;
       closeColorPicker();
       renderActionConfig();
       renderActionBar();
@@ -260,6 +276,7 @@ function openColorPicker(event, actionIndex) {
   customInput.value = currentRange.actionDefs[actionIndex].color;
   customInput.addEventListener('input', () => {
     currentRange.actionDefs[actionIndex].color = customInput.value;
+    isDirty = true;
     renderActionConfig();
     renderActionBar();
     renderMatrix();
@@ -379,6 +396,7 @@ function handleCellChange(index, actionIndex) {
     cell.dataset.action = actionIndex;
   }
 
+  isDirty = true;
   updateStats();
 }
 
@@ -464,6 +482,7 @@ function handleGTOImport() {
   });
 
   document.getElementById('gto-paste-area').value = '';
+  isDirty = true;
   renderMatrix();
   updateStats();
   showToast(`Action "${currentRange.actionDefs[actionIdx].label}" importée`);
@@ -568,6 +587,7 @@ function handleAddAction() {
   const index = currentRange.actionDefs.length + 1;
 
   currentRange.actionDefs.push({ label: `Action ${index}`, color });
+  isDirty = true;
   renderActionConfig();
   renderActionBar();
   updateStats();
@@ -597,6 +617,7 @@ function handleDeleteAction(actionIndex) {
     }
   }
   currentRange.cells = newCells;
+  isDirty = true;
 
   // Adjust active action if needed
   if (activeActionIndex >= currentRange.actionDefs.length) {
@@ -638,11 +659,16 @@ function readFormIntoRange() {
 
 function handleSave() {
   readFormIntoRange();
+  isDirty = false;
   onSave(currentRange);
   showToast('Range sauvegardée');
 }
 
 function handleBack() {
+  if (isDirty && !confirm('Des modifications non sauvegardées seront perdues. Quitter quand même ?')) {
+    return;
+  }
+  isDirty = false;
   onBack();
 }
 

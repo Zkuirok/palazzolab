@@ -7,8 +7,8 @@ import { createRange, createNashRange, saveRange, loadRanges, getRangeStats, get
 import { getSituationLabel, nashCellColor } from './range-config.js';
 import { HANDS_MATRIX } from './poker-hands.js';
 import { initRangeList, refreshList, clearPreview, getAllRangesData } from './range-list.js';
-import { initEditor, openEditor } from './range-editor.js';
-import { initNashEditor, openNashEditor } from './nash-editor.js';
+import { initEditor, openEditor, editorHasUnsavedChanges } from './range-editor.js';
+import { initNashEditor, openNashEditor, nashEditorHasUnsavedChanges } from './nash-editor.js';
 
 let allRanges = [];
 
@@ -57,14 +57,23 @@ export function initRangeBuilder() {
   document.getElementById('btn-compare-mode').addEventListener('click', showCompareView);
   document.getElementById('btn-back-from-compare').addEventListener('click', showListView);
 
-  // When navigating to the ranges page, always show list view
+  // When navigating to the ranges page, show list view unless an editor
+  // holds unsaved changes (then stay put so nothing is silently lost)
+  const backToListGuarded = () => {
+    const editorOpen = document.getElementById('range-editor-view').style.display !== 'none';
+    const nashOpen = document.getElementById('range-nash-editor-view').style.display !== 'none';
+    if ((editorOpen && editorHasUnsavedChanges()) || (nashOpen && nashEditorHasUnsavedChanges())) {
+      return; // keep the editor open — its own Retour button asks confirmation
+    }
+    showListView();
+  };
   const navItem = document.querySelector('.nav-item[data-page="ranges"]');
   if (navItem) {
-    navItem.addEventListener('click', () => showListView());
+    navItem.addEventListener('click', backToListGuarded);
   }
   const dashboardCard = document.querySelector('.card[onclick*="ranges"]');
   if (dashboardCard) {
-    dashboardCard.addEventListener('click', () => showListView());
+    dashboardCard.addEventListener('click', backToListGuarded);
   }
 }
 

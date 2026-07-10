@@ -7,21 +7,35 @@ import { initRangeBuilder } from './range-builder.js';
 import { initTrainer, launchQuizForRange } from './trainer.js';
 import { loadRanges, exportRanges, importRangesFromFile } from './range-model.js';
 import { initDashboard } from './dashboard.js';
+import { initHome } from './home.js';
 
 // === INIT ===
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
-  initToggles();
   initRangeBuilder();
   initTrainer();                         // must run before initDashboard
   initDashboard({ launchQuizForRange });
+  initHome();
   initSettings();
+  initEscapeKey();
 });
 
-// === TOGGLES ===
-function initToggles() {
-  document.querySelectorAll('.toggle').forEach(toggle => {
-    toggle.addEventListener('click', () => toggle.classList.toggle('on'));
+// === ESCAPE KEY: close overlays & modals ===
+function initEscapeKey() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const preview = document.getElementById('range-preview-modal')
+      || document.getElementById('colosseum-range-preview-modal');
+    if (preview) {
+      preview.remove();
+      document.getElementById('btn-view-range-eye')?.classList.remove('active');
+      document.getElementById('btn-colosseum-eye')?.classList.remove('active');
+      return;
+    }
+    const typeModal = document.getElementById('range-type-modal');
+    if (typeModal && typeModal.style.display !== 'none') {
+      typeModal.style.display = 'none';
+    }
   });
 }
 

@@ -11,14 +11,29 @@ import { showToast } from './toast.js';
 let currentRange = null;
 let onSave = null;
 let onBack = null;
+let isDirty = false;
+
+export function nashEditorHasUnsavedChanges() {
+  return isDirty;
+}
 
 export function initNashEditor({ onSaveRange, onBackToList }) {
   onSave = onSaveRange;
   onBack = onBackToList;
 
   document.getElementById('btn-save-nash').addEventListener('click', handleNashSave);
-  document.getElementById('btn-back-from-nash').addEventListener('click', () => onBack());
+  document.getElementById('btn-back-from-nash').addEventListener('click', () => {
+    if (isDirty && !confirm('Des modifications non sauvegardées seront perdues. Quitter quand même ?')) {
+      return;
+    }
+    isDirty = false;
+    onBack();
+  });
   document.getElementById('btn-nash-clear-all').addEventListener('click', handleNashClearAll);
+
+  ['nash-editor-name', 'nash-editor-charttype', 'nash-editor-format', 'nash-editor-position'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => { isDirty = true; });
+  });
 }
 
 const POSITION_OPTIONS = {
@@ -28,6 +43,7 @@ const POSITION_OPTIONS = {
 
 export function openNashEditor(range) {
   currentRange = structuredClone(range);
+  isDirty = false;
   document.getElementById('nash-editor-name').value = currentRange.name;
 
   // Populate chartType
@@ -116,6 +132,7 @@ function openNashCellInput(cell, index, hand) {
     if ((e.key === 'Delete' || e.key === 'Backspace') && input.value === '') {
       e.preventDefault();
       delete currentRange.cells[index];
+      isDirty = true;
       input.remove();
       applyNashCellStyle(cell, hand, undefined);
       updateNashStats();
@@ -137,6 +154,7 @@ function commitNashInput(input, index, cell, hand) {
   if (!input.isConnected) return;
 
   const val = input.value.trim();
+  const before = currentRange.cells[index];
 
   if (val === '' || val === '-') {
     delete currentRange.cells[index];
@@ -146,6 +164,7 @@ function commitNashInput(input, index, cell, hand) {
       currentRange.cells[index] = num;
     }
   }
+  if (currentRange.cells[index] !== before) isDirty = true;
 
   input.remove();
   applyNashCellStyle(cell, hand, currentRange.cells[index]);
@@ -206,6 +225,7 @@ function handleNashSave() {
   currentRange.chartType = document.getElementById('nash-editor-charttype').value;
   currentRange.format = document.getElementById('nash-editor-format').value;
   currentRange.position = document.getElementById('nash-editor-position').value;
+  isDirty = false;
   onSave(currentRange);
   showToast('Table Nash sauvegardée');
 }
@@ -213,6 +233,7 @@ function handleNashSave() {
 function handleNashClearAll() {
   if (!confirm('Effacer toutes les valeurs de cette table Nash ?')) return;
   currentRange.cells = {};
+  isDirty = true;
   renderNashMatrix();
   updateNashStats();
 }

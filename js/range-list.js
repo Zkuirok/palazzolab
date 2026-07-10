@@ -68,8 +68,8 @@ function getFilteredRanges() {
   const oppFilter = document.getElementById('filter-opponent').value;
 
   return allRanges.filter(range => {
-    // Nash ranges have no situation/opponent — always show them
-    if (range.type === 'nash') return true;
+    // Nash ranges have no situation/opponent — hide them when a filter is active
+    if (range.type === 'nash') return !sitFilter && !oppFilter;
     if (sitFilter && range.situation !== sitFilter) return false;
     if (oppFilter && range.opponentType !== oppFilter) return false;
     return true;
