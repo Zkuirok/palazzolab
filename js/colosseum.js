@@ -13,6 +13,7 @@ const SESSION_SIZE = 100;
 const SUITS = ['heart', 'diamond', 'spade', 'club'];
 const HISTORY_KEY = 'pokerlab_colosseum_history';
 const MAX_HISTORY = 5; // sessions kept per range
+const FILTERS_KEY = 'pokerlab_colosseum_filters';
 
 const GRADES = [
   { min: 95, label: 'IMPERATOR' },
@@ -40,6 +41,8 @@ let _completeFired = false;
 
 let recentHands = [];
 let _autoAdvanceTimer = null;
+
+let _selectRanges = []; // standard ranges available in the select view
 
 // === INIT ===
 
@@ -80,6 +83,18 @@ export function initColosseum({ onBack, showGameView, showSelectView, onComplete
       showRangePreview();
     }
   });
+
+  // Select-view filters: persist + re-render on change
+  ['colosseum-filter-opponent', 'colosseum-filter-situation', 'colosseum-filter-depth'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      saveSelectFilters({
+        opponent: document.getElementById('colosseum-filter-opponent').value,
+        situation: document.getElementById('colosseum-filter-situation').value,
+        depth: document.getElementById('colosseum-filter-depth').value,
+      });
+      renderSelectList();
+    });
+  });
 }
 
 // === RECONFIGURE (for dashboard deep-link launches) ===
@@ -101,35 +116,108 @@ export function launchColosseumForRange(range) {
 
 export function openColosseumSelect(allRanges) {
   activeRange = null;
-  const list = document.getElementById('colosseum-range-list');
-  const startBtn = document.getElementById('btn-colosseum-start');
-  const warningEl = document.getElementById('colosseum-warning');
-  list.innerHTML = '';
-  startBtn.disabled = true;
-  warningEl.style.display = 'none';
 
-  // Filter: no Nash, no GTO (any cell with array value)
-  const standardRanges = allRanges.filter(r =>
+  // Filter: no Nash, no GTO frequency format (any cell with array value)
+  _selectRanges = allRanges.filter(r =>
     r.type !== 'nash' &&
     !Object.values(r.cells || {}).some(v => Array.isArray(v))
   );
 
-  if (standardRanges.length === 0) {
+  populateSelectFilters();
+  renderSelectList();
+}
+
+// === SELECT-VIEW FILTERS ===
+
+function loadSelectFilters() {
+  try {
+    return JSON.parse(localStorage.getItem(FILTERS_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveSelectFilters(filters) {
+  localStorage.setItem(FILTERS_KEY, JSON.stringify(filters));
+}
+
+function populateSelectFilters() {
+  const saved = loadSelectFilters();
+
+  // Situations (positions) present in available ranges
+  const sitSelect = document.getElementById('colosseum-filter-situation');
+  const sitIds = [...new Set(_selectRanges.map(r => r.situation).filter(Boolean))];
+  sitSelect.innerHTML = '<option value="">Toutes positions</option>';
+  sitIds.forEach(id => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = getSituationLabel(id) || id;
+    sitSelect.appendChild(opt);
+  });
+  sitSelect.value = sitIds.includes(saved.situation) ? saved.situation : '';
+
+  // Stack depths present in available ranges (sorted by depthMin)
+  const depthSelect = document.getElementById('colosseum-filter-depth');
+  const depthMap = new Map();
+  _selectRanges.forEach(r => {
+    const label = getDepthLabel(r);
+    if (!depthMap.has(label)) depthMap.set(label, r.depthMin ?? 0);
+  });
+  const depths = [...depthMap.entries()].sort((a, b) => a[1] - b[1]).map(([label]) => label);
+  depthSelect.innerHTML = '<option value="">Tous stacks</option>';
+  depths.forEach(label => {
+    const opt = document.createElement('option');
+    opt.value = label;
+    opt.textContent = label;
+    depthSelect.appendChild(opt);
+  });
+  depthSelect.value = depths.includes(saved.depth) ? saved.depth : '';
+
+  // Opponent (static options)
+  document.getElementById('colosseum-filter-opponent').value = saved.opponent || '';
+}
+
+function renderSelectList() {
+  const list = document.getElementById('colosseum-range-list');
+  const startBtn = document.getElementById('btn-colosseum-start');
+  const warningEl = document.getElementById('colosseum-warning');
+  list.innerHTML = '';
+  activeRange = null;
+  startBtn.disabled = true;
+  warningEl.style.display = 'none';
+
+  const oppFilter = document.getElementById('colosseum-filter-opponent').value;
+  const sitFilter = document.getElementById('colosseum-filter-situation').value;
+  const depthFilter = document.getElementById('colosseum-filter-depth').value;
+
+  const filtered = _selectRanges.filter(r => {
+    if (oppFilter && (r.opponentType || 'reg') !== oppFilter) return false;
+    if (sitFilter && r.situation !== sitFilter) return false;
+    if (depthFilter && getDepthLabel(r) !== depthFilter) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    const msg = _selectRanges.length === 0
+      ? 'Aucune range disponible.<br>Crée d\'abord une range dans <strong>Mes Ranges</strong>.'
+      : 'Aucune range ne correspond aux filtres.';
     list.innerHTML = `
       <div class="colosseum-empty-state">
         <div class="empty-icon">⚔</div>
-        <p>Aucune range disponible.<br>Crée d'abord une range dans <strong>Mes Ranges</strong>.</p>
+        <p>${msg}</p>
       </div>`;
     return;
   }
 
   const history = loadHistory();
 
-  standardRanges.forEach(range => {
+  filtered.forEach(range => {
     const eligible = buildEligibleHands(range);
     const assignedCount = Object.values(range.cells || {}).filter(v => !Array.isArray(v)).length;
     const situationLabel = getSituationLabel(range.situation) || range.situation || '';
     const depthLabel = getDepthLabel(range);
+    const oppLabel = range.opponentType === 'fish' ? 'Fish' : range.opponentType === 'gto' ? 'GTO' : 'Reg';
+    const subLabel = range.opponentSubcategory ? ` (${range.opponentSubcategory})` : '';
     const rangeHistory = history[range.id] || [];
 
     const card = document.createElement('div');
@@ -156,7 +244,7 @@ export function openColosseumSelect(allRanges) {
       <div class="colosseum-range-main">
         <div class="colosseum-range-info">
           <div class="colosseum-range-name">${escapeHtml(range.name)}</div>
-          <div class="colosseum-range-meta">${escapeHtml(situationLabel)} · ${escapeHtml(depthLabel)} · ${assignedCount}/169 mains</div>
+          <div class="colosseum-range-meta">${escapeHtml(situationLabel)} · ${escapeHtml(depthLabel)} · vs ${escapeHtml(oppLabel + subLabel)} · ${assignedCount}/169 mains</div>
         </div>
       </div>
       ${historyHtml}

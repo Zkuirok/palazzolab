@@ -3,7 +3,7 @@
    Renders range cards, filtering, CRUD triggers
    ============================================ */
 
-import { loadRanges, deleteRange, duplicateRange, saveRange, getRangeStats, getDepthLabel } from './range-model.js';
+import { loadRanges, deleteRange, duplicateRange, saveRange, getRangeStats, getDepthLabel, exportSingleRange } from './range-model.js';
 import { getSituationLabel, getAllSituations } from './range-config.js';
 import { showToast } from './toast.js';
 
@@ -197,6 +197,16 @@ function createRangeCard(range) {
     showToast('Range dupliquée');
   });
 
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'btn-stone btn-small';
+  exportBtn.textContent = '⤓';
+  exportBtn.title = 'Exporter (JSON)';
+  exportBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportSingleRange(range);
+    showToast('Range exportée');
+  });
+
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-stone btn-small';
   delBtn.textContent = '✕';
@@ -213,6 +223,7 @@ function createRangeCard(range) {
 
   actions.appendChild(editBtn);
   actions.appendChild(dupBtn);
+  actions.appendChild(exportBtn);
   actions.appendChild(delBtn);
 
   card.appendChild(info);
@@ -276,6 +287,16 @@ function createNashRangeCard(range) {
     showToast('Table Nash dupliquée');
   });
 
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'btn-stone btn-small';
+  exportBtn.textContent = '⤓';
+  exportBtn.title = 'Exporter (JSON)';
+  exportBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportSingleRange(range);
+    showToast('Table Nash exportée');
+  });
+
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-stone btn-small';
   delBtn.textContent = '✕';
@@ -292,6 +313,7 @@ function createNashRangeCard(range) {
 
   actions.appendChild(editBtn);
   actions.appendChild(dupBtn);
+  actions.appendChild(exportBtn);
   actions.appendChild(delBtn);
 
   card.appendChild(info);
