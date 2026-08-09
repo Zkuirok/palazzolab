@@ -51,21 +51,26 @@ export function deleteProgram() {
 // PROGRAM CREATION
 // ============================================
 
+function makeProgressEntry(id, allRanges) {
+  const range = allRanges.find(r => r.id === id);
+  return {
+    rangeId: id,
+    name: range ? range.name : id,
+    calibrationScore: null,
+    calibrationCompletedAt: null,
+    lastScore: null,
+    lastReviewedAt: null,
+    nextDue: null,
+    interval: null,
+    streak98: 0,
+    addedAt: todayStr(),
+  };
+}
+
 export function createProgram(selectedRangeIds, dailyLimit, allRanges) {
   const progress = {};
   selectedRangeIds.forEach(id => {
-    const range = allRanges.find(r => r.id === id);
-    progress[id] = {
-      rangeId: id,
-      name: range ? range.name : id,
-      calibrationScore: null,
-      calibrationCompletedAt: null,
-      lastScore: null,
-      lastReviewedAt: null,
-      nextDue: null,
-      interval: null,
-      streak98: 0,
-    };
+    progress[id] = makeProgressEntry(id, allRanges);
   });
 
   return {
@@ -82,14 +87,47 @@ export function createProgram(selectedRangeIds, dailyLimit, allRanges) {
 // CALIBRATION
 // ============================================
 
+// Initial schedule derived from a calibration score (no regression rule)
+function initialIntervalFor(score) {
+  if (score >= 98) return { interval: 7, streak98: 1 };
+  if (score > 95) return { interval: 5, streak98: 0 };
+  if (score > 89) return { interval: 3, streak98: 0 };
+  return { interval: 1, streak98: 0 };
+}
+
+// First day at or after `startDay` that is not already at dailyLimit
+function findFreeSlot(program, startDay) {
+  const counts = {};
+  Object.values(program.progress).forEach(p => {
+    if (p.nextDue) counts[p.nextDue] = (counts[p.nextDue] || 0) + 1;
+  });
+  let day = startDay;
+  while ((counts[day] || 0) >= program.dailyLimit) {
+    day = addDays(day, 1);
+  }
+  return day;
+}
+
 export function recordCalibrationScore(program, rangeId, score) {
-  if (!program.progress[rangeId]) return program;
+  const p = program.progress[rangeId];
+  if (!p) return program;
 
   const today = todayStr();
-  program.progress[rangeId].calibrationScore = score;
-  program.progress[rangeId].calibrationCompletedAt = today;
-  program.progress[rangeId].lastScore = score;
-  program.progress[rangeId].lastReviewedAt = today;
+  p.calibrationScore = score;
+  p.calibrationCompletedAt = today;
+  p.lastScore = score;
+  p.lastReviewedAt = today;
+
+  // Range added to an already-running program: schedule it on the spot
+  // instead of dragging the whole program back into calibration.
+  if (program.status === 'ACTIVE') {
+    const { interval, streak98 } = initialIntervalFor(score);
+    p.interval = interval;
+    p.streak98 = streak98;
+    p.nextDue = findFreeSlot(program, addDays(today, interval));
+    saveProgram(program);
+    return program;
+  }
 
   // Check if all ranges are calibrated → transition to ACTIVE
   tryActivateProgram(program);
@@ -101,28 +139,16 @@ export function tryActivateProgram(program) {
   if (program.status !== 'CALIBRATING') return program;
 
   const progresses = Object.values(program.progress);
-  const allCalibrated = progresses.every(p => p.calibrationScore !== null);
+  const allCalibrated = progresses.length > 0 && progresses.every(p => p.calibrationScore !== null);
   if (!allCalibrated) {
     saveProgram(program);
     return program;
   }
 
-  // Compute initial interval per range from calibrationScore (no regression rule)
   progresses.forEach(p => {
-    const score = p.calibrationScore;
-    if (score >= 98) {
-      p.interval = 7;
-      p.streak98 = 1;
-    } else if (score > 95) {
-      p.interval = 5;
-      p.streak98 = 0;
-    } else if (score > 89) {
-      p.interval = 3;
-      p.streak98 = 0;
-    } else {
-      p.interval = 1;
-      p.streak98 = 0;
-    }
+    const { interval, streak98 } = initialIntervalFor(p.calibrationScore);
+    p.interval = interval;
+    p.streak98 = streak98;
   });
 
   // Bucket seeding: distribute across future days respecting dailyLimit
@@ -133,17 +159,9 @@ export function tryActivateProgram(program) {
   });
 
   const today = todayStr();
-  const buckets = {}; // { dateStr: count }
-  const limit = program.dailyLimit;
-
+  // Seed each range at today + its interval, pushed forward while the day is full
   sorted.forEach(p => {
-    // Start from tomorrow + interval to avoid overloading day 1
-    let day = addDays(today, p.interval);
-    while ((buckets[day] || 0) >= limit) {
-      day = addDays(day, 1);
-    }
-    buckets[day] = (buckets[day] || 0) + 1;
-    p.nextDue = day;
+    p.nextDue = findFreeSlot(program, addDays(today, p.interval));
   });
 
   program.status = 'ACTIVE';
@@ -241,6 +259,98 @@ export function skipRange(program, rangeId) {
   program.progress[rangeId].nextDue = addDays(todayStr(), 1);
   saveProgram(program);
   return program;
+}
+
+// ============================================
+// PROGRAM MANAGEMENT
+// ============================================
+
+// Add ranges to an existing program. On an ACTIVE program the newcomers stay
+// unscheduled (nextDue null) until their own calibration quiz is done.
+export function addRangesToProgram(program, rangeIds, allRanges) {
+  const added = [];
+  rangeIds.forEach(id => {
+    if (program.progress[id]) return;
+    program.progress[id] = makeProgressEntry(id, allRanges);
+    if (!program.selectedRangeIds.includes(id)) program.selectedRangeIds.push(id);
+    added.push(id);
+  });
+  saveProgram(program);
+  return { program, added: added.length };
+}
+
+export function removeRangeFromProgram(program, rangeId) {
+  if (!program.progress[rangeId]) return program;
+  delete program.progress[rangeId];
+  program.selectedRangeIds = program.selectedRangeIds.filter(id => id !== rangeId);
+
+  // Dropping the last uncalibrated range can unblock activation
+  if (program.status === 'CALIBRATING') {
+    tryActivateProgram(program);
+  } else {
+    saveProgram(program);
+  }
+  return program;
+}
+
+export function setDailyLimit(program, limit) {
+  const parsed = parseInt(limit, 10);
+  program.dailyLimit = Math.max(1, Math.min(10, Number.isNaN(parsed) ? 3 : parsed));
+  saveProgram(program);
+  return program;
+}
+
+// Ranges awaiting their first quiz (never calibrated)
+export function getPendingCalibration(program) {
+  return Object.values(program.progress).filter(p => p.calibrationScore === null);
+}
+
+// Mastery bucket derived from the current interval — used for sorting/labelling
+export function getMasteryLevel(p) {
+  if (!p || p.calibrationScore === null) return { key: 'pending', label: 'À calibrer', rank: 0 };
+  const i = p.interval ?? 0;
+  if (i >= 30) return { key: 'mastered', label: 'Maîtrisée', rank: 4 };
+  if (i >= 14) return { key: 'solid', label: 'Solide', rank: 3 };
+  if (i >= 5) return { key: 'progress', label: 'En cours', rank: 2 };
+  return { key: 'fragile', label: 'Fragile', rank: 1 };
+}
+
+// ============================================
+// BACKUP BUNDLE (program + ranges + history)
+// ============================================
+
+export const BUNDLE_KIND = 'pokerlab-program-bundle';
+export const BUNDLE_VERSION = 1;
+
+export function buildProgramBundle({ program, ranges, history }) {
+  return {
+    kind: BUNDLE_KIND,
+    version: BUNDLE_VERSION,
+    exportedAt: new Date().toISOString(),
+    program: program || null,
+    ranges: ranges || [],
+    history: history || {},
+  };
+}
+
+// Validates a parsed JSON payload; throws on anything unusable.
+// Also accepts a plain ranges export so a single import path covers both files.
+export function parseProgramBundle(parsed) {
+  if (!parsed || typeof parsed !== 'object') throw new Error('Fichier invalide');
+
+  const ranges = Array.isArray(parsed) ? parsed : (parsed.ranges || []);
+  if (!Array.isArray(ranges)) throw new Error('Fichier invalide : ranges illisibles');
+
+  const program = (parsed.program && typeof parsed.program === 'object') ? parsed.program : null;
+  if (program && (!program.progress || typeof program.progress !== 'object')) {
+    throw new Error('Fichier invalide : programme corrompu');
+  }
+
+  const history = (parsed.history && typeof parsed.history === 'object' && !Array.isArray(parsed.history))
+    ? parsed.history
+    : {};
+
+  return { ranges, program, history };
 }
 
 // ============================================

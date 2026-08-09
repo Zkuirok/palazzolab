@@ -5,6 +5,7 @@
 
 import { loadRanges } from './range-model.js';
 import { loadProgram, getDailyPlan } from './program.js';
+import { loadSessionHistory } from './session-history.js';
 
 export function initHome() {
   render();
@@ -21,10 +22,7 @@ function render() {
   const nashCount = ranges.length - stdCount;
 
   // Last Colosseum session
-  let history = {};
-  try {
-    history = JSON.parse(localStorage.getItem('pokerlab_colosseum_history') || '{}');
-  } catch { /* ignore */ }
+  const history = loadSessionHistory();
   let last = null;
   Object.entries(history).forEach(([rangeId, sessions]) => {
     (sessions || []).forEach(s => {

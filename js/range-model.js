@@ -241,7 +241,7 @@ export function deleteRange(rangeId, allRanges) {
 
 // === EXPORT / IMPORT ===
 
-function downloadJson(payload, filename) {
+export function downloadJson(payload, filename) {
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

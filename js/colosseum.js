@@ -6,14 +6,13 @@
 import { HANDS_MATRIX, getHandCombos, RANKS } from './poker-hands.js';
 import { getSituationLabel } from './range-config.js';
 import { getDepthLabel } from './range-model.js';
+import { loadSessionHistory, recordSession } from './session-history.js';
 
 // === CONSTANTS ===
 
 const SESSION_SIZES = [25, 50, 100];
 const DEFAULT_SESSION_SIZE = 100;
 const SUITS = ['heart', 'diamond', 'spade', 'club'];
-const HISTORY_KEY = 'pokerlab_colosseum_history';
-const MAX_HISTORY = 5; // sessions kept per range
 const FILTERS_KEY = 'pokerlab_colosseum_filters';
 
 const GRADES = [
@@ -271,7 +270,7 @@ function renderSelectList() {
     return;
   }
 
-  const history = loadHistory();
+  const history = loadSessionHistory();
 
   filtered.forEach(range => {
     const eligible = buildEligibleHands(range);
@@ -290,7 +289,7 @@ function renderSelectList() {
         Historique (${rangeHistory.length}) ▾
       </button>
       <div class="colosseum-history-panel" style="display:none">
-        ${[...rangeHistory].reverse().map(s => {
+        ${[...rangeHistory].reverse().slice(0, 10).map(s => {
           const acc = Math.round(s.correct / s.total * 100);
           return `
             <div class="colosseum-history-row">
@@ -614,9 +613,7 @@ function showEndScreen() {
   const grade = GRADES.find(g => accuracy >= g.min)?.label ?? GRADES[GRADES.length - 1].label;
 
   // Save to history (with mistakes so future reviews can target leaks)
-  const history = loadHistory();
-  if (!history[activeRange.id]) history[activeRange.id] = [];
-  history[activeRange.id].push({
+  recordSession(activeRange.id, {
     date: new Date().toISOString(),
     correct: correctCount,
     total: sessionSize,
@@ -626,10 +623,6 @@ function showEndScreen() {
       correct: activeRange.actionDefs[m.correctIdx]?.label ?? '?',
     })),
   });
-  if (history[activeRange.id].length > MAX_HISTORY) {
-    history[activeRange.id] = history[activeRange.id].slice(-MAX_HISTORY);
-  }
-  saveHistory(history);
 
   // Populate end overlay
   document.getElementById('colosseum-end-range-name').textContent = activeRange.name;
@@ -812,20 +805,6 @@ function showRangePreview() {
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   document.body.appendChild(modal);
   panel.querySelector('#btn-colosseum-preview-close').addEventListener('click', closeModal);
-}
-
-// === HISTORY ===
-
-function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveHistory(history) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 // === CARD RENDERING ===
