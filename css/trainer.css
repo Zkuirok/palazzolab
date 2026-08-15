@@ -2074,3 +2074,327 @@
   font-family: var(--font-body);
   font-style: italic;
 }
+
+/* ============================================
+   TERMINUS — drill des seuils de shove-call
+   ============================================ */
+
+/* --- Écran de préparation --- */
+
+.terminus-setup {
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  margin-top: 18px;
+}
+
+.terminus-block-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-bottom: 10px;
+}
+
+.terminus-chart-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.terminus-chart-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--stone-card);
+  border: 1px solid var(--gold-shadow);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.terminus-chart-card:hover {
+  border-color: var(--gold-mid);
+  background: var(--stone-hover);
+  transform: translateY(-1px);
+}
+
+.terminus-chart-card.selected {
+  border-color: var(--gold-bright);
+  background: var(--stone-elevated);
+  box-shadow: 0 0 0 1px var(--gold-soft), 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.terminus-chart-name {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  color: var(--cream-text);
+}
+
+.terminus-chart-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-muted);
+  margin-top: 3px;
+}
+
+.terminus-chart-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.terminus-chart-badge.fish { color: var(--felt-light); }
+.terminus-chart-badge.reg  { color: var(--red-rich); }
+
+.terminus-mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.terminus-mode-card {
+  padding: 16px 18px;
+  background: var(--stone-card);
+  border: 1px solid var(--gold-shadow);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.terminus-mode-card:hover { border-color: var(--gold-mid); background: var(--stone-hover); }
+
+.terminus-mode-card.selected {
+  border-color: var(--gold-bright);
+  background: var(--stone-elevated);
+}
+
+.terminus-mode-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--gold-light);
+  margin-bottom: 5px;
+}
+
+.terminus-mode-desc {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-dim);
+  line-height: 1.45;
+}
+
+.terminus-options {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 34px;
+}
+
+.terminus-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.terminus-chip {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 7px 13px;
+  background: transparent;
+  color: var(--cream-dim);
+  border: 1px solid var(--gold-shadow);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.terminus-chip:hover { border-color: var(--gold-mid); color: var(--cream-text); }
+
+.terminus-chip.selected {
+  border-color: var(--gold-bright);
+  color: var(--gold-light);
+  background: var(--gold-soft);
+}
+
+.terminus-actions { display: flex; gap: 12px; }
+
+.terminus-hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-muted);
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+/* --- Chrono --- */
+
+/* Portée locale : ne pas repositionner .game-room, partagé avec Rubicon/Colosseum */
+.terminus-room { position: relative; }
+
+.terminus-timer-track {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 5;
+}
+
+.terminus-timer-bar {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: var(--gold-bright);
+  transition: background 200ms ease;
+}
+
+.terminus-timer-bar.urgent { background: var(--red-rich); }
+
+/* --- Mode La Borne --- */
+
+.terminus-seuil-prompt {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  color: var(--cream-text);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.terminus-seuil-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.terminus-seuil-input {
+  width: 130px;
+  padding: 10px 14px;
+  font-family: var(--font-heading);
+  font-size: 26px;
+  text-align: center;
+  color: var(--gold-light);
+  background: var(--stone-deep);
+  border: 1px solid var(--gold-mid);
+  outline: none;
+}
+
+.terminus-seuil-input:focus { border-color: var(--gold-bright); box-shadow: 0 0 0 2px var(--gold-soft); }
+.terminus-seuil-input:disabled { opacity: 0.5; }
+
+.terminus-seuil-unit {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 2px;
+  color: var(--cream-muted);
+}
+
+.terminus-seuil-always {
+  width: 42px;
+  height: 42px;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  color: var(--cream-dim);
+  background: var(--stone-card);
+  border: 1px solid var(--gold-shadow);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.terminus-seuil-always:hover { border-color: var(--gold-bright); color: var(--gold-light); }
+
+/* --- Feedback --- */
+
+.terminus-fb-ratio {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--cream-dim);
+  margin-top: 6px;
+}
+
+.terminus-fb-next {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+/* --- Écran de fin --- */
+
+.terminus-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+  max-width: 900px;
+}
+
+.terminus-stat {
+  padding: 18px;
+  background: var(--stone-card);
+  border: 1px solid var(--gold-shadow);
+  text-align: center;
+}
+
+.terminus-stat.alert { border-color: var(--red-rich); }
+
+.terminus-stat-val {
+  font-family: var(--font-display);
+  font-size: 30px;
+  color: var(--gold-light);
+}
+
+.terminus-stat.alert .terminus-stat-val { color: #d05a4a; }
+
+.terminus-stat-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-dim);
+  margin-top: 5px;
+}
+
+.terminus-stat-n { color: var(--cream-muted); font-size: 11px; }
+
+.terminus-target {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--cream-dim);
+  padding: 12px 16px;
+  border-left: 2px solid var(--gold-mid);
+  background: var(--gold-soft);
+  max-width: 900px;
+  margin-bottom: 22px;
+}
+
+.terminus-misses { max-width: 900px; margin-bottom: 22px; }
+
+.terminus-miss {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(138, 100, 32, 0.18);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+
+.terminus-miss-hand {
+  font-family: var(--font-heading);
+  color: var(--cream-text);
+  min-width: 54px;
+}
+
+.terminus-miss-ctx { color: var(--cream-dim); flex: 1; }
+
+.terminus-miss-tag {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--red-rich);
+}
+
+.terminus-miss-empty {
+  font-family: var(--font-body);
+  color: var(--felt-light);
+  padding: 10px 0;
+}

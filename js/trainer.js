@@ -8,6 +8,7 @@ import { showToast } from './toast.js';
 import { initRubicon, openRubiconSelect } from './rubicon.js';
 import { initRubiconChallenge, openRubiconChallenge } from './rubicon-challenge.js';
 import { initColosseum, openColosseumSelect, launchColosseumForRange, reconfigureColosseum } from './colosseum.js';
+import { initTerminus, openTerminusSelect } from './terminus.js';
 
 export function initTrainer() {
   // Init Challenge mode
@@ -54,6 +55,19 @@ export function initTrainer() {
     showColosseumSelectView();
   });
 
+  // Init Terminus (shove-call thresholds)
+  initTerminus({
+    onBack: showTrainerHub,
+    showSelectView: showTerminusSelectView,
+    showGameView: showTerminusGameView,
+  });
+
+  // Terminus tile click
+  document.getElementById('game-terminus').addEventListener('click', () => {
+    openTerminusSelect();
+    showTerminusSelectView();
+  });
+
   // Navigate back when the trainer page is shown from the sidebar
   const navItem = document.querySelector('.nav-item[data-page="trainer"]');
   if (navItem) {
@@ -70,6 +84,8 @@ function hideAllTrainerViews() {
   document.getElementById('rubicon-challenge-view').style.display = 'none';
   document.getElementById('colosseum-select-view').style.display = 'none';
   document.getElementById('colosseum-game-view').style.display = 'none';
+  document.getElementById('terminus-select-view').style.display = 'none';
+  document.getElementById('terminus-game-view').style.display = 'none';
 }
 
 function showTrainerHub() {
@@ -120,6 +136,24 @@ function showColosseumSelectView() {
 function showColosseumGameView() {
   hideAllTrainerViews();
   const view = document.getElementById('colosseum-game-view');
+  view.style.display = '';
+  view.style.animation = 'none';
+  view.offsetHeight;
+  view.style.animation = '';
+}
+
+function showTerminusSelectView() {
+  hideAllTrainerViews();
+  const view = document.getElementById('terminus-select-view');
+  view.style.display = '';
+  view.style.animation = 'none';
+  view.offsetHeight;
+  view.style.animation = '';
+}
+
+function showTerminusGameView() {
+  hideAllTrainerViews();
+  const view = document.getElementById('terminus-game-view');
   view.style.display = '';
   view.style.animation = 'none';
   view.offsetHeight;
