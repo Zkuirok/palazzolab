@@ -1,6 +1,6 @@
 /* ============================================
    PokerLab — Terminus
-   Drill des seuils de shove-call (3-handed).
+   Drill des seuils de shove-call (3-handed et heads-up).
 
    Terminus, dieu romain des bornes : ce mode ne travaille pas les ranges,
    il travaille la FRONTIÈRE — le stack exact où le call devient un fold.
@@ -22,7 +22,7 @@ import { SHOVE_CHARTS, ALWAYS_CALL } from './shove-charts.js';
 
 const SUITS = ['heart', 'diamond', 'spade', 'club'];
 const MIN_STACK = 1.0;
-const MAX_STACK = 14.5;          // stack de départ 3-handed
+const FALLBACK_MAX_STACK = 14.5; // si la table ne porte pas son propre plafond
 const BAND_LO = 0.65;            // bande d'entraînement, symétrique autour du seuil
 const BAND_HI = 1.35;
 const BORDERLINE_SHARE = 0.7;    // part des mains tirées dans la bande
@@ -146,7 +146,10 @@ export function openTerminusSelect() {
     card.className = 'terminus-chart-card';
     card.innerHTML = `
       <div class="terminus-chart-info">
-        <div class="terminus-chart-name">${escapeHtml(c.hero)} face au shove ${escapeHtml(c.villain)}</div>
+        <div class="terminus-chart-name">
+          <span class="terminus-chart-format">${escapeHtml(c.format || '3H')}</span>
+          ${escapeHtml(c.hero)} face au shove ${escapeHtml(c.villain)}
+        </div>
         <div class="terminus-chart-meta">${finite} seuils réels · ${c.cells.length - finite} toujours-call</div>
       </div>
       <span class="terminus-chart-badge ${c.opponentType}">${escapeHtml(c.opponentType)}</span>`;
@@ -270,7 +273,7 @@ function renderPreview() {
   if (!chart) return;
   const title = document.createElement('div');
   title.className = 'terminus-preview-title';
-  title.textContent = `${chart.hero} face au shove ${chart.villain} — ${chart.opponentType}`;
+  title.textContent = `${chart.format} — ${chart.hero} face au shove ${chart.villain} — ${chart.opponentType}`;
   box.appendChild(title);
   box.appendChild(buildChartMatrix(chart.cells));
   box.appendChild(matrixLegend());
@@ -313,15 +316,16 @@ function drawQuestion() {
   // Décision : concentrer le tirage autour du seuil, sans le rendre devinable.
   // La bande est symétrique (0.65-1.35×) donc « c'est borderline » n'indique
   // pas la réponse : il y a autant de calls que de folds dedans.
+  const max = chart.maxStack || FALLBACK_MAX_STACK;
   const borderline = weightedFinite.length > 0 && Math.random() < BORDERLINE_SHARE;
   if (borderline) {
     const idx = pick(weightedFinite);
     const t = chart.cells[idx];
     const lo = Math.max(MIN_STACK, t * BAND_LO);
-    const hi = Math.min(MAX_STACK, t * BAND_HI);
+    const hi = Math.min(max, t * BAND_HI);
     return { idx, stack: round1(lo + Math.random() * (hi - lo)) };
   }
-  return { idx: pick(weightedAll), stack: round1(MIN_STACK + Math.random() * (MAX_STACK - MIN_STACK)) };
+  return { idx: pick(weightedAll), stack: round1(MIN_STACK + Math.random() * (max - MIN_STACK)) };
 }
 
 function nextQuestion() {
@@ -444,7 +448,7 @@ function renderGameShell() {
       </div>
     </div>`;
 
-  document.getElementById('terminus-villain-label').textContent = `${chart.villain} · ${chart.opponentType} · ALL-IN`;
+  document.getElementById('terminus-villain-label').textContent = `${chart.format} · ${chart.villain} · ${chart.opponentType} · ALL-IN`;
   document.getElementById('terminus-hero-label').textContent = `Toi · ${chart.hero}`;
   document.getElementById('btn-terminus-quit').addEventListener('click', quit);
 }
@@ -547,7 +551,7 @@ function openErrorPanel() {
     <div class="corner-tl"></div><div class="corner-tr"></div>
     <div class="corner-bl"></div><div class="corner-br"></div>
     <div class="range-preview-header">
-      <span class="range-preview-title">${escapeHtml(chart.hero)} vs shove ${escapeHtml(chart.villain)} — ${escapeHtml(chart.opponentType)}</span>
+      <span class="range-preview-title">${escapeHtml(chart.format)} — ${escapeHtml(chart.hero)} vs shove ${escapeHtml(chart.villain)} — ${escapeHtml(chart.opponentType)}</span>
       <button class="range-preview-close" id="terminus-err-close">✕ Fermer</button>
     </div>
     <div class="terminus-err-recap">
@@ -627,7 +631,7 @@ function endSession() {
     <div class="page-content">
       <div class="page-header">
         <h1>Terminus</h1>
-        <p>${escapeHtml(chart.hero)} face au shove ${escapeHtml(chart.villain)} — ${escapeHtml(chart.opponentType)} · ${mode === 'decision' ? 'Décision' : 'La Borne'}</p>
+        <p>${escapeHtml(chart.format)} — ${escapeHtml(chart.hero)} face au shove ${escapeHtml(chart.villain)} — ${escapeHtml(chart.opponentType)} · ${mode === 'decision' ? 'Décision' : 'La Borne'}</p>
       </div>
       <div class="frise-divider"></div>
 

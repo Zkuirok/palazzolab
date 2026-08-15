@@ -2513,3 +2513,18 @@
 /* La grille 1fr arrondit à ~2px près : sans ça une barre de scroll horizontale
    parasite apparaît pour rien dans le panneau d'erreur. */
 #terminus-error-overlay .range-preview-panel { overflow-x: hidden; }
+
+/* Format du nœud (3H / HU) devant le nom de la table */
+.terminus-chart-format {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 1px 6px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--gold-dark);
+  background: rgba(212, 164, 56, 0.1);
+  border: 1px solid rgba(212, 164, 56, 0.22);
+  vertical-align: middle;
+}
