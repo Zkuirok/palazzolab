@@ -14,7 +14,8 @@
    triviale et les reps y sont gaspillées.
    ============================================ */
 
-import { HANDS_MATRIX, getHandCombos } from './poker-hands.js';
+import { HANDS_MATRIX, getHandCombos, RANKS } from './poker-hands.js';
+import { nashCellColor } from './range-config.js';
 import { SHOVE_CHARTS, ALWAYS_CALL } from './shove-charts.js';
 
 // === CONSTANTES ===
@@ -72,6 +73,12 @@ export function initTerminus({ onBack: back, showSelectView: showSelect, showGam
 function handleKeydown(e) {
   const view = document.getElementById('terminus-game-view');
   if (!view || view.style.display === 'none') return;
+  if (e.key === 'Escape' && document.getElementById('terminus-error-overlay')) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeErrorPanel();
+    return;
+  }
   if (mode === 'decision' && answering) {
     if (e.key === 'c' || e.key === 'C' || e.key === 'ArrowLeft') { e.preventDefault(); answerDecision('call'); }
     if (e.key === 'f' || e.key === 'F' || e.key === 'ArrowRight') { e.preventDefault(); answerDecision('fold'); }
@@ -96,6 +103,7 @@ export function openTerminusSelect() {
         <div class="terminus-block">
           <div class="terminus-block-title">Le nœud</div>
           <div class="terminus-chart-list" id="terminus-chart-list"></div>
+          <div class="terminus-preview" id="terminus-preview"></div>
         </div>
 
         <div class="terminus-block">
@@ -147,6 +155,7 @@ export function openTerminusSelect() {
       card.classList.add('selected');
       chart = c;
       document.getElementById('btn-terminus-start').disabled = false;
+      renderPreview();
       renderHint();
     });
     list.appendChild(card);
@@ -195,6 +204,76 @@ function renderChips(containerId, options, getter, setter) {
     });
     row.appendChild(chip);
   });
+}
+
+// === TABLE 13×13 ===
+
+/** Matrice étiquetée des seuils. `highlightIdx` encadre la main en cours. */
+function buildChartMatrix(cells, highlightIdx = null) {
+  const grid = document.createElement('div');
+  grid.className = 'nash-labeled-matrix';
+
+  const corner = document.createElement('div');
+  corner.className = 'nash-matrix-corner';
+  grid.appendChild(corner);
+
+  RANKS.forEach(r => {
+    const lbl = document.createElement('div');
+    lbl.className = 'nash-matrix-col-label';
+    lbl.textContent = r;
+    grid.appendChild(lbl);
+  });
+
+  RANKS.forEach((rowRank, rowIdx) => {
+    const rowLbl = document.createElement('div');
+    rowLbl.className = 'nash-matrix-row-label';
+    rowLbl.textContent = rowRank;
+    grid.appendChild(rowLbl);
+
+    for (let colIdx = 0; colIdx < 13; colIdx++) {
+      const i = rowIdx * 13 + colIdx;
+      const hand = HANDS_MATRIX[i];
+      const t = cells[i];
+      const cell = document.createElement('div');
+      cell.className = 'mini-cell painted';
+
+      const color = nashCellColor(t >= ALWAYS_CALL ? 999 : t);
+      const [r, g, b] = [1, 3, 5].map(o => parseInt(color.slice(o, o + 2), 16));
+      const darker = `rgb(${Math.max(0, r - 30)},${Math.max(0, g - 30)},${Math.max(0, b - 30)})`;
+      cell.style.background = `linear-gradient(135deg, ${color}, ${darker})`;
+      cell.textContent = t >= ALWAYS_CALL ? '∞' : String(t);
+      cell.title = t >= ALWAYS_CALL ? `${hand} — call à toute profondeur` : `${hand} — call si ≤ ${t} BB`;
+
+      if (i === highlightIdx) cell.classList.add('range-preview-highlight');
+      grid.appendChild(cell);
+    }
+  });
+  return grid;
+}
+
+function matrixLegend() {
+  const el = document.createElement('div');
+  el.className = 'terminus-legend';
+  el.innerHTML = `
+    <span class="terminus-legend-item"><i style="background:#a03030"></i>&lt; 4 BB</span>
+    <span class="terminus-legend-item"><i style="background:#b07030"></i>4–8</span>
+    <span class="terminus-legend-item"><i style="background:#7a9a30"></i>8–15</span>
+    <span class="terminus-legend-item"><i style="background:#3a7a50"></i>∞ toujours call</span>
+    <span class="terminus-legend-note">Valeur = stack effectif en dessous duquel tu call.</span>`;
+  return el;
+}
+
+function renderPreview() {
+  const box = document.getElementById('terminus-preview');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!chart) return;
+  const title = document.createElement('div');
+  title.className = 'terminus-preview-title';
+  title.textContent = `${chart.hero} face au shove ${chart.villain} — ${chart.opponentType}`;
+  box.appendChild(title);
+  box.appendChild(buildChartMatrix(chart.cells));
+  box.appendChild(matrixLegend());
 }
 
 function renderHint() {
@@ -433,15 +512,70 @@ function renderFeedback(correct, timedOut) {
       <span class="feedback-threshold-val">${t}</span>
     </div>
     ${ratioLine}
-    <div class="terminus-fb-next">Entrée →</div>`;
+    ${correct ? '' : `
+      <button class="terminus-continue-btn" id="terminus-btn-continue">Continuer →</button>
+      <div class="terminus-fb-next">ou Entrée</div>
+      <button class="terminus-seechart-btn" id="terminus-btn-seechart">Revoir la table</button>`}`;
 
   document.querySelectorAll('#terminus-action-section .game-action-btn').forEach(b => b.disabled = true);
   const input = document.getElementById('terminus-seuil-input');
   if (input) input.disabled = true;
   updateScore();
 
-  // Les bonnes réponses enchaînent ; les erreurs attendent, pour laisser lire le seuil.
-  if (correct) advanceTimer = setTimeout(nextQuestion, 850);
+  if (correct) {
+    // Les bonnes réponses enchaînent ; les erreurs s'arrêtent sur la table.
+    advanceTimer = setTimeout(nextQuestion, 850);
+    return;
+  }
+  document.getElementById('terminus-btn-continue').addEventListener('click', nextQuestion);
+  document.getElementById('terminus-btn-seechart').addEventListener('click', openErrorPanel);
+  openErrorPanel();
+}
+
+// === PANNEAU D'ERREUR — la table, main encadrée ===
+
+function openErrorPanel() {
+  closeErrorPanel();
+  const t = current.threshold >= ALWAYS_CALL ? '∞ (toujours call)' : `${current.threshold.toFixed(1)} BB`;
+  const overlay = document.createElement('div');
+  overlay.id = 'terminus-error-overlay';
+  overlay.className = 'range-preview-overlay';
+
+  const panel = document.createElement('div');
+  panel.className = 'range-preview-panel ornamented';
+  panel.innerHTML = `
+    <div class="corner-tl"></div><div class="corner-tr"></div>
+    <div class="corner-bl"></div><div class="corner-br"></div>
+    <div class="range-preview-header">
+      <span class="range-preview-title">${escapeHtml(chart.hero)} vs shove ${escapeHtml(chart.villain)} — ${escapeHtml(chart.opponentType)}</span>
+      <button class="range-preview-close" id="terminus-err-close">✕ Fermer</button>
+    </div>
+    <div class="terminus-err-recap">
+      <span class="terminus-err-hand">${escapeHtml(current.hand)}</span>
+      ${current.stack === null ? '' : `<span class="terminus-err-num">${current.stack.toFixed(1)} BB effectif</span>`}
+      <span class="terminus-err-num">seuil ${t}</span>
+      ${current.ratio === null ? '' : `<span class="terminus-err-num">${current.ratio.toFixed(2)}×</span>`}
+      ${current.correctAction ? `<span class="terminus-err-verdict">→ ${current.correctAction.toUpperCase()}</span>` : ''}
+    </div>`;
+
+  panel.appendChild(buildChartMatrix(chart.cells, current.idx));
+  panel.appendChild(matrixLegend());
+
+  const footer = document.createElement('div');
+  footer.className = 'terminus-err-footer';
+  footer.innerHTML = `<button class="terminus-continue-btn" id="terminus-err-continue">Continuer →</button>`;
+  panel.appendChild(footer);
+
+  overlay.appendChild(panel);
+  // Clic hors du panneau : on referme sans avancer, le feedback reste lisible.
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeErrorPanel(); });
+  document.body.appendChild(overlay);
+  panel.querySelector('#terminus-err-close').addEventListener('click', closeErrorPanel);
+  panel.querySelector('#terminus-err-continue').addEventListener('click', nextQuestion);
+}
+
+function closeErrorPanel() {
+  document.getElementById('terminus-error-overlay')?.remove();
 }
 
 function updateScore() {
@@ -590,6 +724,7 @@ function round1(x) {
 }
 
 function clearTimers() {
+  closeErrorPanel();
   if (countdownRaf) { cancelAnimationFrame(countdownRaf); countdownRaf = null; }
   if (advanceTimer) { clearTimeout(advanceTimer); advanceTimer = null; }
   const bar = document.getElementById('terminus-timer-bar');

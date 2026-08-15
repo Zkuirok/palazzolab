@@ -2398,3 +2398,118 @@
   color: var(--felt-light);
   padding: 10px 0;
 }
+
+/* --- Terminus : table 13x13 (menu + panneau d'erreur) --- */
+
+.terminus-preview:empty { display: none; }
+
+.terminus-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--stone-card);
+  border: 1px solid var(--gold-shadow);
+}
+
+.terminus-preview-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-bottom: 12px;
+}
+
+.terminus-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-dim);
+}
+
+.terminus-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+.terminus-legend-item i {
+  width: 13px;
+  height: 13px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.terminus-legend-note { color: var(--cream-muted); font-style: italic; }
+
+/* Récapitulatif de l'erreur, au-dessus de la table */
+.terminus-err-recap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0 14px;
+  border-bottom: 1px solid rgba(138, 100, 32, 0.25);
+  margin-bottom: 14px;
+}
+
+.terminus-err-hand {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--gold-light);
+}
+
+.terminus-err-num {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--cream-dim);
+}
+
+.terminus-err-verdict {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: var(--felt-light);
+  margin-left: auto;
+}
+
+.terminus-err-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* Boutons d'avance après une erreur */
+.terminus-continue-btn {
+  margin-top: 10px;
+  padding: 9px 20px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--stone-deep);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold-mid));
+  border: 1px solid var(--gold-light);
+  cursor: pointer;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.terminus-continue-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.terminus-err-footer .terminus-continue-btn { margin-top: 0; }
+
+.terminus-seechart-btn {
+  margin-top: 8px;
+  padding: 5px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-dim);
+  background: transparent;
+  border: 1px solid var(--gold-shadow);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.terminus-seechart-btn:hover { border-color: var(--gold-mid); color: var(--gold-light); }
+
+/* La grille 1fr arrondit à ~2px près : sans ça une barre de scroll horizontale
+   parasite apparaît pour rien dans le panneau d'erreur. */
+#terminus-error-overlay .range-preview-panel { overflow-x: hidden; }
