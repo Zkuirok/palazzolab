@@ -121,34 +121,46 @@ function modeInfo() {
 }
 
 function buildModeSwitch() {
-  const bar = document.createElement('div');
-  bar.className = 'program-mode-switch';
+  const wrap = document.createElement('div');
+  wrap.className = 'program-mode-block';
 
-  bar.innerHTML = Object.entries(MODES).map(([key, m]) => {
+  const cards = Object.entries(MODES).map(([key, m]) => {
     const prog = loadProgram(key);
+    const isActive = key === _mode;
     let status;
+    let due = false;
     if (!prog) {
       status = 'pas encore de programme';
     } else if (prog.status === 'ACTIVE') {
-      const due = getDailyPlan(prog).due.length;
-      status = due > 0 ? `${due} à réviser aujourd'hui` : 'à jour';
+      const n = getDailyPlan(prog).due.length;
+      due = n > 0;
+      status = due ? `${n} à réviser aujourd'hui` : 'à jour';
     } else {
       const all = Object.values(prog.progress);
       const done = all.filter(p => p.calibrationScore !== null).length;
       status = `calibration ${done} / ${all.length}`;
     }
+    // The inactive card says what a click does; the active one is marked as displayed
+    const action = isActive ? 'Affiché' : (prog ? 'Ouvrir →' : 'Créer →');
     return `
-      <button class="program-mode-btn${key === _mode ? ' active' : ''}" data-mode="${key}">
-        <span class="program-mode-name">${escapeHtml(m.label)}</span>
+      <button class="program-mode-btn${isActive ? ' active' : ''}" data-mode="${key}" title="${isActive ? 'Programme affiché' : `Afficher le programme ${escapeAttr(m.label)}`}">
+        <span class="program-mode-head">
+          <span class="program-mode-name">${escapeHtml(m.label)}</span>
+          <span class="program-mode-action">${action}</span>
+        </span>
         <span class="program-mode-sub">${escapeHtml(m.sub)}</span>
-        <span class="program-mode-status${prog && prog.status === 'ACTIVE' && status !== 'à jour' ? ' due' : ''}">${escapeHtml(status)}</span>
+        <span class="program-mode-status${due ? ' due' : ''}">${escapeHtml(status)}</span>
       </button>`;
   }).join('');
 
-  bar.querySelectorAll('.program-mode-btn').forEach(btn => {
+  wrap.innerHTML = `
+    <div class="program-mode-caption">Un programme par exercice — clique sur une carte pour passer de l'un à l'autre.</div>
+    <div class="program-mode-switch">${cards}</div>`;
+
+  wrap.querySelectorAll('.program-mode-btn').forEach(btn => {
     btn.addEventListener('click', () => switchMode(btn.dataset.mode));
   });
-  return bar;
+  return wrap;
 }
 
 // ============================================

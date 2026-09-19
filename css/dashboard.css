@@ -517,12 +517,41 @@
 
 /* === Mode switch: one program per exercise (Colosseum / Fresco) === */
 
+.program-mode-block { margin-bottom: 22px; }
+
+.program-mode-caption {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--cream-muted);
+  margin-bottom: 10px;
+}
+
 .program-mode-switch {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
-  margin-bottom: 22px;
 }
+
+.program-mode-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.program-mode-action {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  white-space: nowrap;
+}
+
+.program-mode-btn.active .program-mode-action { color: var(--cream-muted); }
+.program-mode-btn:not(.active):hover .program-mode-action { color: var(--gold-light); }
 
 .program-mode-btn {
   display: flex;
