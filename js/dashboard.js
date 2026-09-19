@@ -1,6 +1,9 @@
 /* ============================================
    PokerLab — Dashboard Program Controller
    Spaced repetition program UI (Aujourd'hui / Suivi / Gérer)
+
+   Two programs live side by side, one per exercise (see MODES): the page
+   opens on the last mode used, and every action below targets `_mode`.
    ============================================ */
 
 import { loadRanges, saveRanges, downloadJson } from './range-model.js';
@@ -11,8 +14,11 @@ import {
   getSessions,
   aggregateMistakes,
   mergeSessionHistory,
+  QUIZ_HISTORY_KEY,
+  FRESCO_HISTORY_KEY,
 } from './session-history.js';
 import {
+  normalizeMode,
   loadProgram,
   saveProgram,
   deleteProgram,
@@ -32,7 +38,32 @@ import {
   parseProgramBundle,
 } from './program.js';
 
-let _launchQuiz = null;
+// Wording and stores of each exercise
+export const MODES = {
+  quiz: {
+    label: 'Colosseum',
+    sub: 'quiz main par main',
+    noun: 'quiz',
+    plural: 'quiz',
+    article: 'un quiz',
+    historyKey: QUIZ_HISTORY_KEY,
+    intro: 'Chaque révision est un quiz : les mains défilent une à une et tu choisis l\'action. Le score est le % de réponses justes.',
+  },
+  fresco: {
+    label: 'Fresco',
+    sub: 'range repeinte de mémoire',
+    noun: 'fresque',
+    plural: 'fresques',
+    article: 'une fresque',
+    historyKey: FRESCO_HISTORY_KEY,
+    intro: 'Chaque révision est une fresque : tu repeins la range entière de mémoire. Le score est le % de mains exactes.',
+  },
+};
+
+export const PROGRAM_MODE_KEY = 'pokerlab_program_mode';
+
+let _mode = loadMode();          // 'quiz' | 'fresco' — which program the page shows
+let _launchers = {};             // mode → launchXForRange(rangeId, { onComplete, onBack })
 let _activeTab = 'today';       // 'today' | 'tracking' | 'manage'
 let _trackingSort = 'weak';     // 'weak' | 'strong' | 'due' | 'name'
 const _expandedRows = new Set(); // range ids whose mistake panel is open
@@ -42,8 +73,8 @@ let _pendingFeedback = null;     // survives the re-render that follows an impor
 // INIT
 // ============================================
 
-export function initDashboard({ launchQuizForRange }) {
-  _launchQuiz = launchQuizForRange;
+export function initDashboard({ launchQuizForRange, launchFrescoForRange }) {
+  _launchers = { quiz: launchQuizForRange, fresco: launchFrescoForRange };
   render();
 
   // Re-render when the programme nav item is clicked
@@ -52,14 +83,86 @@ export function initDashboard({ launchQuizForRange }) {
 }
 
 // ============================================
+// MODE (which program is displayed)
+// ============================================
+
+function loadMode() {
+  try {
+    return normalizeMode(localStorage.getItem(PROGRAM_MODE_KEY));
+  } catch {
+    return normalizeMode(null);
+  }
+}
+
+// Also used by the home page to open the programme on the mode that has work due
+export function setProgramMode(mode) {
+  _mode = normalizeMode(mode);
+  try { localStorage.setItem(PROGRAM_MODE_KEY, _mode); } catch { /* ignore */ }
+}
+
+// For callers that show the page without going through the sidebar (home CTA):
+// land on today's plan, whatever tab was open last time
+export function renderProgramPage() {
+  _activeTab = 'today';
+  _expandedRows.clear();
+  render();
+}
+
+function switchMode(mode) {
+  if (mode === _mode) return;
+  setProgramMode(mode);
+  _activeTab = 'today';
+  _expandedRows.clear();
+  render();
+}
+
+function modeInfo() {
+  return MODES[_mode];
+}
+
+function buildModeSwitch() {
+  const bar = document.createElement('div');
+  bar.className = 'program-mode-switch';
+
+  bar.innerHTML = Object.entries(MODES).map(([key, m]) => {
+    const prog = loadProgram(key);
+    let status;
+    if (!prog) {
+      status = 'pas encore de programme';
+    } else if (prog.status === 'ACTIVE') {
+      const due = getDailyPlan(prog).due.length;
+      status = due > 0 ? `${due} à réviser aujourd'hui` : 'à jour';
+    } else {
+      const all = Object.values(prog.progress);
+      const done = all.filter(p => p.calibrationScore !== null).length;
+      status = `calibration ${done} / ${all.length}`;
+    }
+    return `
+      <button class="program-mode-btn${key === _mode ? ' active' : ''}" data-mode="${key}">
+        <span class="program-mode-name">${escapeHtml(m.label)}</span>
+        <span class="program-mode-sub">${escapeHtml(m.sub)}</span>
+        <span class="program-mode-status${prog && prog.status === 'ACTIVE' && status !== 'à jour' ? ' due' : ''}">${escapeHtml(status)}</span>
+      </button>`;
+  }).join('');
+
+  bar.querySelectorAll('.program-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+  return bar;
+}
+
+// ============================================
 // MAIN RENDER DISPATCHER
 // ============================================
 
 function render() {
-  const program = loadProgram();
   const container = document.getElementById('dashboard-program-section');
   if (!container) return;
   container.innerHTML = '';
+
+  _mode = loadMode(); // the home page may have pointed us at the mode with work due
+  container.appendChild(buildModeSwitch());
+  const program = loadProgram(_mode);
 
   if (!program) {
     _activeTab = 'today';
@@ -149,17 +252,19 @@ function renderSetup(container) {
   const panel = document.createElement('div');
   panel.className = 'program-panel';
 
+  const m = modeInfo();
   panel.innerHTML = `
-    <div class="program-panel-title">Programme d'entraînement</div>
+    <div class="program-panel-title">Programme ${escapeHtml(m.label)}</div>
     <p class="program-setup-intro">
-      Sélectionne les ranges à maîtriser et définis ton rythme quotidien.<br>
-      Tu commenceras par une phase de calibration (1 quiz par range), puis le système planifiera tes révisions automatiquement.
+      ${escapeHtml(m.intro)}<br>
+      Sélectionne les ranges à maîtriser et définis ton rythme quotidien.
+      Tu commenceras par une phase de calibration (${escapeHtml(m.article)} par range), puis le système planifiera tes révisions automatiquement.
     </p>
     <div class="program-setup-ranges" id="program-range-list"></div>
     <div class="program-limit-row">
       <span class="program-limit-label">Ranges / jour :</span>
       <input type="number" id="program-daily-limit" class="program-limit-input" value="3" min="1" max="10">
-      <span class="program-limit-hint">quiz par jour en croisière</span>
+      <span class="program-limit-hint">${escapeHtml(m.plural)} par jour en croisière</span>
     </div>
     <button class="program-start-btn" id="program-start-btn" disabled>
       Démarrer le programme →
@@ -198,7 +303,7 @@ function renderSetup(container) {
     const selectedIds = [...panel.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
     if (selectedIds.length === 0) return;
     const limit = Math.max(1, Math.min(10, parseInt(panel.querySelector('#program-daily-limit').value) || 3));
-    const program = createProgram(selectedIds, limit, loadRanges());
+    const program = createProgram(selectedIds, limit, loadRanges(), _mode);
     saveProgram(program);
     render();
   });
@@ -287,15 +392,23 @@ function buildCalibrationRow(p, allRanges) {
 
 function bindCalibrationButtons(scope) {
   scope.querySelectorAll('.program-cal-btn:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      _launchQuiz(btn.dataset.rangeId, {
-        onComplete: handleQuizComplete,
-        onBack: () => {
-          window.navigateTo('program');
-          render();
-        },
-      });
-    });
+    btn.addEventListener('click', () => launchRange(btn.dataset.rangeId));
+  });
+}
+
+// Open the exercise of the current mode on one range; the score comes back
+// through onComplete and is filed under the mode that launched it.
+function launchRange(rangeId) {
+  const mode = _mode;
+  const launch = _launchers[mode];
+  if (!launch) return;
+  launch(rangeId, {
+    onComplete: (id, score) => handleSessionComplete(mode, id, score),
+    onBack: () => {
+      setProgramMode(mode);
+      window.navigateTo('program');
+      render();
+    },
   });
 }
 
@@ -348,20 +461,12 @@ function renderActive(container, program) {
   bindCalibrationButtons(panel);
 
   panel.querySelectorAll('[data-action="start"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      _launchQuiz(btn.dataset.rangeId, {
-        onComplete: handleQuizComplete,
-        onBack: () => {
-          window.navigateTo('program');
-          render();
-        },
-      });
-    });
+    btn.addEventListener('click', () => launchRange(btn.dataset.rangeId));
   });
 
   panel.querySelectorAll('[data-action="skip"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const prog = loadProgram();
+      const prog = loadProgram(_mode);
       if (prog) {
         skipRange(prog, btn.dataset.rangeId);
         render();
@@ -467,7 +572,7 @@ function sortTrackingRows(rows) {
 
 function renderTracking(container, program) {
   const allRanges = loadRanges();
-  const history = loadSessionHistory();
+  const history = loadSessionHistory(modeInfo().historyKey);
   const rows = Object.values(program.progress).map(p => buildTrackingRow(p, allRanges, history));
 
   const panel = document.createElement('div');
@@ -599,7 +704,7 @@ function buildOutsidePanel(outside) {
   panel.className = 'program-panel';
   panel.innerHTML = `
     <div class="program-panel-title">Hors programme</div>
-    <p class="program-setup-intro">Ranges déjà travaillées au Colosseum mais absentes du programme.</p>
+    <p class="program-setup-intro">Ranges déjà travaillées en mode ${escapeHtml(modeInfo().label)} mais absentes de ce programme.</p>
     <div class="program-track-list" id="program-outside-list"></div>
   `;
 
@@ -641,23 +746,15 @@ function bindTrackingActions(scope) {
   });
 
   scope.querySelectorAll('[data-quiz-id]:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      _launchQuiz(btn.dataset.quizId, {
-        onComplete: handleQuizComplete,
-        onBack: () => {
-          window.navigateTo('program');
-          render();
-        },
-      });
-    });
+    btn.addEventListener('click', () => launchRange(btn.dataset.quizId));
   });
 
   scope.querySelectorAll('[data-add-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const prog = loadProgram();
+      const prog = loadProgram(_mode);
       if (!prog) return;
       addRangesToProgram(prog, [btn.dataset.addId], loadRanges());
-      showToast('Range ajoutée — un quiz de calibration la planifiera.');
+      showToast(`Range ajoutée — ${modeInfo().article} de calibration la planifiera.`);
       render();
     });
   });
@@ -726,7 +823,7 @@ function renderManage(container, program) {
     <div class="program-setup-ranges" id="program-add-list"></div>
     <button class="program-start-btn" id="program-add-btn" disabled>Ajouter au programme</button>
     <p class="program-add-hint">
-      Une range ajoutée passe d'abord un quiz de calibration ; le reste du programme continue normalement.
+      Une range ajoutée passe d'abord ${escapeHtml(modeInfo().article)} de calibration ; le reste du programme continue normalement.
     </p>
   `;
   const addList = add.querySelector('#program-add-list');
@@ -743,7 +840,7 @@ function renderManage(container, program) {
   backup.innerHTML = `
     <div class="program-panel-title">Sauvegarde</div>
     <p class="program-setup-intro">
-      L'export contient <strong>le programme, toutes tes ranges et l'historique des sessions</strong> — un seul fichier suffit pour reprendre sur un autre ordinateur.
+      L'export contient <strong>les deux programmes (Colosseum et Fresco), toutes tes ranges et les historiques de sessions</strong> — un seul fichier suffit pour reprendre sur un autre ordinateur.
     </p>
     <div class="program-io-row">
       <button class="program-cal-btn" id="program-export-btn">⤓ Exporter la sauvegarde</button>
@@ -760,10 +857,10 @@ function renderManage(container, program) {
   danger.innerHTML = `
     <div class="program-panel-title">Zone de danger</div>
     <p class="program-setup-intro">
-      Réinitialiser efface la progression du programme (scores de calibration, intervalles, échéances).
-      Tes ranges et l'historique des sessions sont conservés.
+      Réinitialiser efface la progression du programme ${escapeHtml(modeInfo().label)} (scores de calibration, intervalles, échéances).
+      Tes ranges, l'historique des sessions et l'autre programme sont conservés.
     </p>
-    <button class="program-reset-link" id="program-reset-btn">Réinitialiser le programme</button>
+    <button class="program-reset-link" id="program-reset-btn">Réinitialiser le programme ${escapeHtml(modeInfo().label)}</button>
   `;
   container.appendChild(danger);
 
@@ -773,7 +870,7 @@ function renderManage(container, program) {
 function bindManageActions(container) {
   // Daily limit
   container.querySelector('#program-manage-limit-save').addEventListener('click', () => {
-    const prog = loadProgram();
+    const prog = loadProgram(_mode);
     if (!prog) return;
     setDailyLimit(prog, container.querySelector('#program-manage-limit').value);
     showToast(`Rythme : ${prog.dailyLimit} range${prog.dailyLimit > 1 ? 's' : ''} par jour`);
@@ -783,7 +880,7 @@ function bindManageActions(container) {
   // Remove a range
   container.querySelectorAll('[data-remove-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const prog = loadProgram();
+      const prog = loadProgram(_mode);
       if (!prog) return;
       if (Object.keys(prog.progress).length <= 1) {
         showToast('Impossible de retirer la dernière range — utilise Réinitialiser.');
@@ -810,7 +907,7 @@ function bindManageActions(container) {
   addBtn.addEventListener('click', () => {
     const ids = [...addList.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
     if (ids.length === 0) return;
-    const prog = loadProgram();
+    const prog = loadProgram(_mode);
     if (!prog) return;
     const { added } = addRangesToProgram(prog, ids, loadRanges());
     showToast(`${added} range${added > 1 ? 's' : ''} ajoutée${added > 1 ? 's' : ''} — calibration à faire.`);
@@ -818,18 +915,20 @@ function bindManageActions(container) {
     render();
   });
 
-  // Export bundle
+  // Export bundle — always the whole training state, whatever mode is displayed
   container.querySelector('#program-export-btn').addEventListener('click', () => {
     const ranges = loadRanges();
     const bundle = buildProgramBundle({
-      program: loadProgram(),
+      program: loadProgram('quiz'),
+      frescoProgram: loadProgram('fresco'),
       ranges,
-      history: loadSessionHistory(),
+      history: loadSessionHistory(QUIZ_HISTORY_KEY),
+      frescoHistory: loadSessionHistory(FRESCO_HISTORY_KEY),
     });
     downloadJson(bundle, `pokerlab-programme-${todayStr()}.json`);
     setFeedback(
       container.querySelector('#program-io-feedback'),
-      `✓ Sauvegarde exportée — ${ranges.length} range(s) + programme + historique.`,
+      `✓ Sauvegarde exportée — ${ranges.length} range(s) + programmes + historiques.`,
       'ok'
     );
   });
@@ -841,8 +940,8 @@ function bindManageActions(container) {
 
   // Reset
   container.querySelector('#program-reset-btn').addEventListener('click', () => {
-    if (window.confirm('Réinitialiser le programme ? Toutes les données de progression seront perdues.\nTes ranges et l\'historique des sessions sont conservés.')) {
-      deleteProgram();
+    if (window.confirm(`Réinitialiser le programme ${modeInfo().label} ? Toutes les données de progression seront perdues.\nTes ranges, l'historique des sessions et l'autre programme sont conservés.`)) {
+      deleteProgram(_mode);
       _activeTab = 'today';
       render();
     }
@@ -868,7 +967,9 @@ function bindBundleImport(fileInput, feedbackEl) {
       const parts = [`${summary.rangesAdded} range(s) importée(s)`];
       if (summary.rangesSkipped > 0) parts.push(`${summary.rangesSkipped} déjà présente(s)`);
       if (summary.sessionsAdded > 0) parts.push(`${summary.sessionsAdded} session(s) d'historique`);
-      parts.push(summary.programImported ? 'programme restauré' : 'programme inchangé');
+      parts.push(summary.programsImported.length > 0
+        ? `programme${summary.programsImported.length > 1 ? 's' : ''} restauré${summary.programsImported.length > 1 ? 's' : ''} (${summary.programsImported.map(k => MODES[k].label).join(', ')})`
+        : 'programmes inchangés');
       const message = `✓ ${parts.join(' · ')}.`;
       _pendingFeedback = { message, kind: 'ok' };
       showToast(message.replace('✓ ', 'Import : '));
@@ -887,14 +988,15 @@ async function importBundleFile(file) {
     throw new Error('Fichier illisible (JSON invalide)');
   }
 
-  const { ranges, program, history } = parseProgramBundle(parsed);
+  const { ranges, program, frescoProgram, history, frescoHistory } = parseProgramBundle(parsed);
+  const incoming = { quiz: program, fresco: frescoProgram };
 
-  // A program whose ranges are missing would be unusable — confirm before touching anything
-  const current = loadProgram();
-  let programImported = false;
-  if (program && current) {
+  // An imported program replaces the local one of the same mode — confirm before touching anything
+  const overwritten = Object.keys(incoming).filter(mode => incoming[mode] && loadProgram(mode));
+  if (overwritten.length > 0) {
+    const names = overwritten.map(mode => MODES[mode].label).join(' et ');
     if (!window.confirm(
-      'Un programme existe déjà sur ce navigateur.\n' +
+      `Un programme ${names} existe déjà sur ce navigateur.\n` +
       'L\'importer remplacera ta progression actuelle (scores, intervalles, échéances).\n\n' +
       'Continuer ?'
     )) {
@@ -908,29 +1010,34 @@ async function importBundleFile(file) {
   const toAdd = ranges.filter(r => r && r.id && !existingIds.has(r.id));
   if (toAdd.length > 0) saveRanges([...existing, ...toAdd]);
 
-  // 2. Session history — merged, deduped on session date
-  const { added: sessionsAdded } = mergeSessionHistory(history);
+  // 2. Session histories — merged, deduped on session date
+  const sessionsAdded = mergeSessionHistory(history, QUIZ_HISTORY_KEY).added
+    + mergeSessionHistory(frescoHistory, FRESCO_HISTORY_KEY).added;
 
-  // 3. Program — replaces the local one
-  if (program) {
-    saveProgram(program);
-    programImported = true;
-  }
+  // 3. Programs — each replaces the local one of its mode
+  const programsImported = [];
+  Object.entries(incoming).forEach(([mode, prog]) => {
+    if (!prog) return;
+    saveProgram({ ...prog, mode });
+    programsImported.push(mode);
+  });
+  // Show the restored program right away (the current mode if it was part of the file)
+  if (programsImported.length > 0 && !programsImported.includes(_mode)) setProgramMode(programsImported[0]);
 
   return {
     rangesAdded: toAdd.length,
     rangesSkipped: ranges.length - toAdd.length,
     sessionsAdded,
-    programImported,
+    programsImported,
   };
 }
 
 // ============================================
-// QUIZ COMPLETION
+// SESSION COMPLETION (quiz or fresque)
 // ============================================
 
-function handleQuizComplete(rangeId, score) {
-  const prog = loadProgram();
+function handleSessionComplete(mode, rangeId, score) {
+  const prog = loadProgram(mode);
   if (!prog) return;
   const p = prog.progress[rangeId];
   if (!p) return;

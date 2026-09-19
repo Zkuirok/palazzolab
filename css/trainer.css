@@ -2528,3 +2528,577 @@
   border: 1px solid rgba(212, 164, 56, 0.22);
   vertical-align: middle;
 }
+
+/* ============================================
+   FRESCO — peinture de range de mémoire
+   ============================================ */
+
+/* --- Sélection --- */
+
+.fresco-setup {
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.fresco-filters { margin-bottom: 0; }
+
+.fresco-block-title {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-top: 10px;
+}
+
+.fresco-range-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fresco-range-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 18px;
+  background: var(--stone-card);
+  border: 1px solid rgba(212, 164, 56, 0.12);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.fresco-range-card:hover {
+  border-color: var(--gold-bright);
+  background: var(--stone-hover);
+  box-shadow: 0 0 10px var(--gold-glow);
+}
+
+.fresco-range-card.selected {
+  border-color: var(--gold-bright);
+  background: var(--stone-elevated);
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.fresco-range-card.demo { border-style: dashed; }
+
+.fresco-range-info { flex: 1; min-width: 0; }
+
+.fresco-range-name {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--cream-text);
+  margin-bottom: 3px;
+}
+
+.fresco-demo-badge {
+  margin-left: 10px;
+  padding: 1px 7px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  border: 1px solid rgba(212, 164, 56, 0.3);
+  vertical-align: middle;
+}
+
+.fresco-range-meta {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+}
+
+.fresco-range-swatches { display: flex; gap: 3px; margin-top: 7px; }
+
+.fresco-range-swatches i {
+  width: 14px;
+  height: 8px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+.fresco-range-history { text-align: right; flex-shrink: 0; }
+
+.fresco-range-last {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fresco-range-best {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--cream-muted);
+}
+
+.acc-good { color: #4a9a60; }
+.acc-mid  { color: #c8a050; }
+.acc-low  { color: #b04040; }
+
+.fresco-empty {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--cream-muted);
+  line-height: 1.6;
+  padding: 18px 4px;
+}
+
+.fresco-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.fresco-actions .btn-gold:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.fresco-hint {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-muted);
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+/* --- Atelier --- */
+
+.fresco-topbar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid rgba(138, 100, 32, 0.25);
+  margin-bottom: 22px;
+}
+
+.fresco-topbar .game-quit-btn {
+  margin: 0;
+  color: rgba(180, 155, 105, 0.7);
+  border-color: rgba(212, 164, 56, 0.2);
+}
+
+.fresco-topbar-info { flex: 1; min-width: 0; }
+
+.fresco-topbar-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--gold-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fresco-topbar-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-dim);
+  margin-top: 2px;
+}
+
+.fresco-topbar-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.fresco-count {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--cream-dim);
+  min-width: 70px;
+  text-align: right;
+}
+
+.fresco-progress-bar {
+  width: 160px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(212, 164, 56, 0.15);
+}
+
+.fresco-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--gold-mid), var(--gold-bright));
+  transition: width 120ms ease;
+}
+
+.fresco-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+/* La grille suit la hauteur de fenêtre : les 13 rangs doivent rester visibles sans scroller pendant la peinture */
+.fresco-board {
+  flex: 1 1 420px;
+  min-width: 380px;
+  max-width: min(100%, calc(100vh - 215px));
+}
+
+.fresco-side {
+  flex: 0 0 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fresco-side-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-top: 8px;
+}
+
+.fresco-side-title:first-child { margin-top: 0; }
+
+.fresco-side-n { color: var(--cream-muted); letter-spacing: 0; }
+
+/* Grille 13x13 avec rangs en bordure */
+.fresco-grid {
+  display: grid;
+  grid-template-columns: 22px repeat(13, 1fr);
+  gap: 2px;
+  position: relative;
+  z-index: 2;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.fresco-rank {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cream-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fresco-grid .mini-cell {
+  font-size: 11px;
+  letter-spacing: 0;
+  overflow: hidden;
+}
+
+.fresco-grid.show-labels .mini-cell {
+  color: rgba(240, 232, 216, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Les cellules peintes recoivent une couleur de texte inline contrastee : pas d'ombre parasite */
+.fresco-grid.show-labels .mini-cell.painted { text-shadow: none; font-weight: 700; }
+
+.fresco-grid:not(.show-labels) .mini-cell { font-size: 0; }
+
+.fresco-grid.painting,
+.fresco-grid.painting .mini-cell { cursor: crosshair; }
+
+.fresco-grid.readonly .mini-cell { cursor: default; }
+
+.fresco-grid.readonly .mini-cell:hover {
+  transform: none;
+  box-shadow: none;
+  z-index: auto;
+}
+
+/* Verdict : main fausse encadree dans ta fresque, cadre pointille sur la bonne action en face */
+.fresco-grid .mini-cell.wrong {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+  z-index: 3;
+}
+
+.fresco-grid .mini-cell.wrong-peer {
+  outline: 2px dashed rgba(255, 255, 255, 0.85);
+  outline-offset: -2px;
+  z-index: 3;
+}
+
+/* Survol synchronise entre les deux grilles */
+.fresco-grid.readonly .mini-cell:hover,
+.fresco-grid .mini-cell.peer-hover {
+  box-shadow: 0 0 0 2px var(--gold-bright), 0 0 10px var(--gold-glow);
+  z-index: 4;
+}
+
+/* Palette */
+.fresco-palette { display: flex; flex-direction: column; gap: 6px; }
+
+.fresco-chip {
+  --chip-color: #7a6a50;
+  --chip-text: var(--cream-text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px 8px 8px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 140ms ease;
+  background: color-mix(in srgb, var(--chip-color) 14%, var(--stone-card));
+  color: var(--cream-text);
+  border: 1px solid color-mix(in srgb, var(--chip-color) 35%, transparent);
+}
+
+.fresco-chip kbd {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  color: var(--cream-dim);
+  border: 1px solid rgba(212, 164, 56, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.fresco-chip-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--chip-color);
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+}
+
+.fresco-chip-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fresco-chip-count {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+  min-width: 22px;
+  text-align: right;
+}
+
+.fresco-chip:hover { border-color: var(--chip-color); }
+
+.fresco-chip.active {
+  background: var(--chip-color);
+  color: var(--chip-text);
+  border-color: var(--chip-color);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.fresco-chip.active kbd {
+  color: var(--chip-text);
+  border-color: color-mix(in srgb, var(--chip-text) 40%, transparent);
+  background: rgba(0, 0, 0, 0.12);
+}
+.fresco-chip.active .fresco-chip-count { color: var(--chip-text); opacity: 0.8; }
+.fresco-chip.active .fresco-chip-dot { border-color: var(--chip-text); }
+
+.fresco-chip.eraser {
+  --chip-color: #4a4034;
+  border-style: dashed;
+}
+
+.fresco-chip.eraser .fresco-chip-dot { background: transparent; border: 1px dashed var(--cream-muted); }
+
+.fresco-chip.eraser.active {
+  --chip-text: var(--cream-text);
+  background: var(--stone-elevated);
+  border-style: solid;
+  border-color: var(--gold-mid);
+}
+
+/* Outils */
+.fresco-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.fresco-tool {
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-dim);
+  background: var(--stone-card);
+  border: 1px solid rgba(212, 164, 56, 0.2);
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.fresco-tool:hover:not(:disabled) { border-color: var(--gold-mid); color: var(--gold-light); background: var(--stone-hover); }
+.fresco-tool:disabled { opacity: 0.38; cursor: default; }
+.fresco-tool.danger:hover:not(:disabled) { border-color: var(--red-rich); color: #d05a4a; }
+
+.fresco-toggle-row { margin-top: 2px; }
+
+.fresco-validate {
+  margin-top: 10px;
+  width: 100%;
+  padding: 13px 20px;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+
+.fresco-help {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-muted);
+  line-height: 1.7;
+}
+
+.fresco-help kbd {
+  padding: 0 4px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  color: var(--cream-dim);
+  border: 1px solid rgba(212, 164, 56, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* --- Verdict --- */
+
+.fresco-result-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 32px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(138, 100, 32, 0.25);
+  margin-bottom: 22px;
+}
+
+.fresco-result-score { text-align: center; flex-shrink: 0; }
+
+.fresco-result-pct {
+  font-family: var(--font-heading);
+  font-size: 56px;
+  line-height: 1;
+  color: var(--gold-light);
+}
+
+.fresco-result-pct.acc-good { color: #5aa870; }
+.fresco-result-pct.acc-mid  { color: var(--gold-light); }
+.fresco-result-pct.acc-low  { color: #c05a4a; }
+
+.fresco-result-grade {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-top: 8px;
+}
+
+.fresco-result-detail { flex: 1; min-width: 240px; }
+
+.fresco-result-range {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--cream-text);
+}
+
+.fresco-result-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream-dim);
+  margin: 3px 0 10px;
+}
+
+.fresco-result-numbers {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--cream-dim);
+}
+
+.fresco-result-numbers strong { color: var(--cream-text); }
+
+.fresco-result-actions { flex-shrink: 0; }
+
+/* Les deux grilles cote a cote ; chacune reste sous la hauteur de fenetre */
+.fresco-compare {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.fresco-compare-col {
+  flex: 1 1 380px;
+  min-width: 340px;
+  max-width: min(100%, calc(100vh - 250px));
+}
+
+.fresco-compare-title {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold-mid);
+  margin-bottom: 10px;
+}
+
+.fresco-compare-title span {
+  margin-left: 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cream-muted);
+}
+
+.fresco-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream-dim);
+}
+
+.fresco-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+.fresco-legend-item i {
+  width: 13px;
+  height: 13px;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.fresco-legend-note { color: var(--cream-muted); font-style: italic; flex-basis: 100%; }
+
+/* Badge « Programme » dans la barre du haut quand la fresque vient du programme */
+.fresco-topbar-program {
+  padding: 1px 7px;
+  font-family: var(--font-heading);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  border: 1px solid rgba(212, 164, 56, 0.3);
+  vertical-align: middle;
+}

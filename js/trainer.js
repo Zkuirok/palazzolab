@@ -9,6 +9,7 @@ import { initRubicon, openRubiconSelect } from './rubicon.js';
 import { initRubiconChallenge, openRubiconChallenge } from './rubicon-challenge.js';
 import { initColosseum, openColosseumSelect, launchColosseumForRange, reconfigureColosseum } from './colosseum.js';
 import { initTerminus, openTerminusSelect } from './terminus.js';
+import { initFresco, openFrescoSelect, reconfigureFresco, launchFrescoForRange as startFrescoOnRange } from './fresco.js';
 
 export function initTrainer() {
   // Init Challenge mode
@@ -68,6 +69,24 @@ export function initTrainer() {
     showTerminusSelectView();
   });
 
+  // Init Fresco (range painting from memory)
+  initFresco({
+    onBack: showTrainerHub,
+    showSelectView: showFrescoSelectView,
+    showGameView: showFrescoGameView,
+  });
+
+  // Fresco tile click — restore default callbacks before opening picker
+  document.getElementById('game-fresco').addEventListener('click', () => {
+    reconfigureFresco({
+      onBack: showTrainerHub,
+      showSelectView: showFrescoSelectView,
+      onComplete: null,
+    });
+    openFrescoSelect();
+    showFrescoSelectView();
+  });
+
   // Navigate back when the trainer page is shown from the sidebar
   const navItem = document.querySelector('.nav-item[data-page="trainer"]');
   if (navItem) {
@@ -86,6 +105,8 @@ function hideAllTrainerViews() {
   document.getElementById('colosseum-game-view').style.display = 'none';
   document.getElementById('terminus-select-view').style.display = 'none';
   document.getElementById('terminus-game-view').style.display = 'none';
+  document.getElementById('fresco-select-view').style.display = 'none';
+  document.getElementById('fresco-game-view').style.display = 'none';
 }
 
 function showTrainerHub() {
@@ -160,6 +181,24 @@ function showTerminusGameView() {
   view.style.animation = '';
 }
 
+function showFrescoSelectView() {
+  hideAllTrainerViews();
+  const view = document.getElementById('fresco-select-view');
+  view.style.display = '';
+  view.style.animation = 'none';
+  view.offsetHeight;
+  view.style.animation = '';
+}
+
+function showFrescoGameView() {
+  hideAllTrainerViews();
+  const view = document.getElementById('fresco-game-view');
+  view.style.display = '';
+  view.style.animation = 'none';
+  view.offsetHeight;
+  view.style.animation = '';
+}
+
 // === PROGRAM DEEP LINK ===
 
 export function launchQuizForRange(rangeId, { onComplete, onBack } = {}) {
@@ -177,4 +216,23 @@ export function launchQuizForRange(rangeId, { onComplete, onBack } = {}) {
   window.navigateTo('trainer');
   showColosseumGameView();
   launchColosseumForRange(range);
+}
+
+// Same deep link for the Fresco programme: the range is imposed, the score
+// comes back through onComplete and every exit returns to the programme page.
+export function launchFrescoForRange(rangeId, { onComplete, onBack } = {}) {
+  const range = loadRanges().find(r => r.id === rangeId);
+  if (!range) return;
+
+  const backToDashboard = () => { if (onBack) onBack(); };
+
+  reconfigureFresco({
+    onBack: backToDashboard,
+    showSelectView: backToDashboard,
+    onComplete: onComplete ? (id, score) => onComplete(id, score) : null,
+  });
+
+  window.navigateTo('trainer');
+  showFrescoGameView();
+  startFrescoOnRange(range);
 }

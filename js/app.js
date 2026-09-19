@@ -4,7 +4,7 @@
 
 import { initNavigation } from './navigation.js';
 import { initRangeBuilder } from './range-builder.js';
-import { initTrainer, launchQuizForRange } from './trainer.js';
+import { initTrainer, launchQuizForRange, launchFrescoForRange } from './trainer.js';
 import { loadRanges, exportRanges, importRangesFromFile } from './range-model.js';
 import { initDashboard } from './dashboard.js';
 import { initHome } from './home.js';
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initRangeBuilder();
   initTrainer();                         // must run before initDashboard
-  initDashboard({ launchQuizForRange });
+  initDashboard({ launchQuizForRange, launchFrescoForRange });
   initHome();
   initSettings();
   initEscapeKey();

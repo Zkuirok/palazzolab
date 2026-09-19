@@ -1,41 +1,47 @@
 /* ============================================
    PokerLab — Session History
-   Shared store for quiz sessions (Colosseum + Programme)
+   Shared store for graded sessions (Colosseum + Fresco + Programme)
+
+   One store per exercise, same entry shape everywhere:
+     { date, correct, total, mistakes: [{ hand, chosen, correct }] }
+   Every function takes the store key last and defaults to the quiz store.
    ============================================ */
 
-const HISTORY_KEY = 'pokerlab_colosseum_history';
+export const QUIZ_HISTORY_KEY = 'pokerlab_colosseum_history';
+export const FRESCO_HISTORY_KEY = 'pokerlab_fresco_history';
 
 // Sessions kept per range. Raised from 5 → 30 so the tracking hub
 // can show a real trend line instead of a handful of points.
 export const MAX_HISTORY = 30;
 
-export function loadSessionHistory() {
+export function loadSessionHistory(key = QUIZ_HISTORY_KEY) {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}');
+    const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch {
     return {};
   }
 }
 
-export function saveSessionHistory(history) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+export function saveSessionHistory(history, key = QUIZ_HISTORY_KEY) {
+  localStorage.setItem(key, JSON.stringify(history));
 }
 
 // Append one session for a range, trimming to MAX_HISTORY (oldest dropped)
-export function recordSession(rangeId, entry) {
-  const history = loadSessionHistory();
+export function recordSession(rangeId, entry, key = QUIZ_HISTORY_KEY) {
+  const history = loadSessionHistory(key);
   if (!history[rangeId]) history[rangeId] = [];
   history[rangeId].push(entry);
   if (history[rangeId].length > MAX_HISTORY) {
     history[rangeId] = history[rangeId].slice(-MAX_HISTORY);
   }
-  saveSessionHistory(history);
+  saveSessionHistory(history, key);
   return history;
 }
 
 // Normalized, chronologically sorted sessions for one range
-export function getSessions(rangeId, history = null) {
-  const store = history || loadSessionHistory();
+export function getSessions(rangeId, history = null, key = QUIZ_HISTORY_KEY) {
+  const store = history || loadSessionHistory(key);
   return (store[rangeId] || [])
     .filter(s => s && s.total > 0)
     .map(s => ({
@@ -66,8 +72,8 @@ export function aggregateMistakes(sessions, limit = 12) {
 }
 
 // Merge an imported history into the local one (dedupe on session date)
-export function mergeSessionHistory(incoming) {
-  const local = loadSessionHistory();
+export function mergeSessionHistory(incoming, key = QUIZ_HISTORY_KEY) {
+  const local = loadSessionHistory(key);
   let added = 0;
 
   Object.entries(incoming || {}).forEach(([rangeId, sessions]) => {
@@ -81,6 +87,6 @@ export function mergeSessionHistory(incoming) {
     local[rangeId] = merged.length > MAX_HISTORY ? merged.slice(-MAX_HISTORY) : merged;
   });
 
-  saveSessionHistory(local);
+  saveSessionHistory(local, key);
   return { added, history: local };
 }

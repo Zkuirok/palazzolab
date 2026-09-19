@@ -1,9 +1,28 @@
 /* ============================================
    PokerLab — Spaced Repetition Program
    Data model and scheduling logic (no DOM)
+
+   Two independent programs share this logic, one per exercise:
+     · 'quiz'   — Colosseum, hand-by-hand quiz (the original program)
+     · 'fresco' — Fresco, the whole range repainted from memory
+   The program object carries its `mode`; storage is keyed by it.
    ============================================ */
 
-const PROGRAM_KEY = 'pokerlab_program';
+export const PROGRAM_MODES = ['quiz', 'fresco'];
+export const DEFAULT_MODE = 'quiz';
+
+const PROGRAM_KEYS = {
+  quiz: 'pokerlab_program',          // historical key — existing programs keep working
+  fresco: 'pokerlab_program_fresco',
+};
+
+export function normalizeMode(mode) {
+  return PROGRAM_MODES.includes(mode) ? mode : DEFAULT_MODE;
+}
+
+function keyFor(mode) {
+  return PROGRAM_KEYS[normalizeMode(mode)];
+}
 
 // ============================================
 // DATE UTILITIES
@@ -30,21 +49,25 @@ function daysDiff(fromStr, toStr) {
 // STORAGE
 // ============================================
 
-export function loadProgram() {
+export function loadProgram(mode = DEFAULT_MODE) {
   try {
-    const raw = localStorage.getItem(PROGRAM_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = localStorage.getItem(keyFor(mode));
+    if (!raw) return null;
+    const program = JSON.parse(raw);
+    if (!program || typeof program !== 'object') return null;
+    program.mode = normalizeMode(mode); // programs saved before modes existed carry none
+    return program;
   } catch {
     return null;
   }
 }
 
 export function saveProgram(program) {
-  localStorage.setItem(PROGRAM_KEY, JSON.stringify(program));
+  localStorage.setItem(keyFor(program.mode), JSON.stringify(program));
 }
 
-export function deleteProgram() {
-  localStorage.removeItem(PROGRAM_KEY);
+export function deleteProgram(mode = DEFAULT_MODE) {
+  localStorage.removeItem(keyFor(mode));
 }
 
 // ============================================
@@ -67,7 +90,7 @@ function makeProgressEntry(id, allRanges) {
   };
 }
 
-export function createProgram(selectedRangeIds, dailyLimit, allRanges) {
+export function createProgram(selectedRangeIds, dailyLimit, allRanges, mode = DEFAULT_MODE) {
   const progress = {};
   selectedRangeIds.forEach(id => {
     progress[id] = makeProgressEntry(id, allRanges);
@@ -75,6 +98,7 @@ export function createProgram(selectedRangeIds, dailyLimit, allRanges) {
 
   return {
     id: `prog_${Date.now()}`,
+    mode: normalizeMode(mode),
     status: 'CALIBRATING',
     dailyLimit,
     selectedRangeIds: [...selectedRangeIds],
@@ -316,41 +340,54 @@ export function getMasteryLevel(p) {
 }
 
 // ============================================
-// BACKUP BUNDLE (program + ranges + history)
+// BACKUP BUNDLE (both programs + ranges + both histories)
 // ============================================
 
 export const BUNDLE_KIND = 'pokerlab-program-bundle';
-export const BUNDLE_VERSION = 1;
+export const BUNDLE_VERSION = 2;
 
-export function buildProgramBundle({ program, ranges, history }) {
+// One file carries the whole training state: the quiz program (`program`,
+// name kept from v1), the fresco program, every range, and both histories.
+export function buildProgramBundle({ program, frescoProgram, ranges, history, frescoHistory }) {
   return {
     kind: BUNDLE_KIND,
     version: BUNDLE_VERSION,
     exportedAt: new Date().toISOString(),
     program: program || null,
+    frescoProgram: frescoProgram || null,
     ranges: ranges || [],
     history: history || {},
+    frescoHistory: frescoHistory || {},
   };
 }
 
+function validProgram(candidate, mode, label) {
+  if (!candidate || typeof candidate !== 'object') return null;
+  if (!candidate.progress || typeof candidate.progress !== 'object') {
+    throw new Error(`Fichier invalide : ${label} corrompu`);
+  }
+  return { ...candidate, mode };
+}
+
+function validHistory(candidate) {
+  return (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) ? candidate : {};
+}
+
 // Validates a parsed JSON payload; throws on anything unusable.
-// Also accepts a plain ranges export so a single import path covers both files.
+// Accepts v1 bundles (quiz program only) and plain ranges exports too.
 export function parseProgramBundle(parsed) {
   if (!parsed || typeof parsed !== 'object') throw new Error('Fichier invalide');
 
   const ranges = Array.isArray(parsed) ? parsed : (parsed.ranges || []);
   if (!Array.isArray(ranges)) throw new Error('Fichier invalide : ranges illisibles');
 
-  const program = (parsed.program && typeof parsed.program === 'object') ? parsed.program : null;
-  if (program && (!program.progress || typeof program.progress !== 'object')) {
-    throw new Error('Fichier invalide : programme corrompu');
-  }
-
-  const history = (parsed.history && typeof parsed.history === 'object' && !Array.isArray(parsed.history))
-    ? parsed.history
-    : {};
-
-  return { ranges, program, history };
+  return {
+    ranges,
+    program: validProgram(parsed.program, 'quiz', 'programme'),
+    frescoProgram: validProgram(parsed.frescoProgram, 'fresco', 'programme Fresco'),
+    history: validHistory(parsed.history),
+    frescoHistory: validHistory(parsed.frescoHistory),
+  };
 }
 
 // ============================================

@@ -515,6 +515,66 @@
   margin-bottom: 14px;
 }
 
+/* === Mode switch: one program per exercise (Colosseum / Fresco) === */
+
+.program-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.program-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 18px;
+  text-align: left;
+  background: var(--stone-card);
+  border: 1px solid rgba(212, 164, 56, 0.18);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.program-mode-btn:hover {
+  border-color: var(--gold-mid);
+  background: var(--stone-hover);
+}
+
+.program-mode-btn.active {
+  border-color: var(--gold-bright);
+  background: var(--stone-elevated);
+  box-shadow: 0 0 0 1px var(--gold-soft), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.program-mode-name {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
+
+.program-mode-btn.active .program-mode-name { color: var(--gold-bright); }
+
+.program-mode-sub {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--cream-muted);
+}
+
+.program-mode-status {
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--cream-muted);
+}
+
+.program-mode-status.due { color: var(--gold-light); }
+
 /* === Setup: restore link === */
 
 .program-setup-restore {
@@ -1022,4 +1082,11 @@
 .home-cta-arrow {
   margin-left: auto;
   opacity: 0.7;
+}
+
+.home-cta-detail {
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--cream-dim);
 }
